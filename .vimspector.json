@@ -1,0 +1,21 @@
+{
+        "configurations": {
+                "HAZElib": {
+                        "adapter": "CodeLLDB",
+                        "breakpoints": {
+                                "exception": {
+                                        "cpp_catch": "N",
+                                        "cpp_throw": "Y"
+                                }
+                        },
+                        "configuration": {
+                                "args": [],
+                                "cwd": "${workspaceRoot}",
+                                "program": "${workspaceRoot}/cmake-build-metal-release/HAZElib",
+                                "request": "launch",
+                                "sourceMap": {},
+                                "type": ""
+                        }
+                }
+        }
+}

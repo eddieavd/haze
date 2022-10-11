@@ -1,0 +1,9 @@
+*build*
+*compile*
+.cache
+*.swp
+*.swo
+.DS_Store
+*.jpg
+*.jpeg
+*.png
