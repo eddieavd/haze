@@ -23,7 +23,7 @@ kernel void mean_blur_kern ( device char const * src, device char * dest, device
         unsigned x_src = x_dest + blur_radius / 2;
         unsigned y_src = y_dest + blur_radius / 2;
 
-        float avg = 0;
+        long avg = 0;
 
         for( unsigned i = y_src - blur_radius / 2; i < y_src + blur_radius / 2; ++i )
         {

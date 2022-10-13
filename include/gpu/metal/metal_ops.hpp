@@ -19,7 +19,7 @@
 
 #include "../../image.hpp"
 
-#define DEFAULT_LIB_PATH "./ops.metallib" // make this configurable
+#define DEFAULT_LIB_PATH "./lib/ops.metallib" // make this configurable
 
 
 namespace haze
@@ -59,12 +59,7 @@ metal_ops< Pixel >::metal_ops ( MTL::Device * device )
 
         MTL::Library * op_lib = device_->newLibrary( filepath, &err );
 
-        if( op_lib == nullptr )
-        {
-                std::cerr << "failed to find default library with error: "
-                          << err->description()->utf8String() << std::endl;
-                return;
-        }
+        HAZE_ASSERT( op_lib != nullptr, "HAZEgpu::metal_ops::ctor: failed to find default library with error: " << err->description()->utf8String() );
 
         auto fn_names = op_lib->functionNames();
 
@@ -79,22 +74,12 @@ metal_ops< Pixel >::metal_ops ( MTL::Device * device )
                 this->f_pipe_map_[ name_utf8 ] =
                         this->device_->newComputePipelineState( this->f_map_[ name_utf8 ], &err );
 
-                if( this->f_pipe_map_[ name_utf8 ] == nullptr )
-                {
-                        std::cerr << "failed to create pipeline state object for "
-                                  << name_utf8 << " with error: "
-                                  << err->description()->utf8String() << std::endl;
-                        return;
-                }
+                HAZE_ASSERT( this->f_pipe_map_[ name_utf8 ] != nullptr, "HAZEgpu::metal_ops::ctor: failed to create pipeline state object for " << name_utf8 << " with error: " << err->description()->utf8String() );
         }
 
         this->command_q_ = device_->newCommandQueue();
 
-        if( this->command_q_ == nullptr )
-        {
-                std::cerr << "failed to create command queue" << std::endl;
-                return;
-        }
+        HAZE_ASSERT( this->command_q_ != nullptr, "HAZEgpu::metal_ops::ctor: failed to create command queue" );
 }
 
 template< typename Pixel >
@@ -102,11 +87,11 @@ void metal_ops< Pixel >::blocking_id ( std::vector< MTL::Buffer * > const & buff
 {
         // create new buffer
         MTL::CommandBuffer * command_buffer = this->command_q_->commandBuffer();
-        // assert commandBuffer != nullptr
+        HAZE_ASSERT( command_buffer != nullptr, "HAZEgpu::metal_ops::blocking_id: failed to create command buffer" );
 
         // create new encoder
         MTL::ComputeCommandEncoder * compute_encoder = command_buffer->computeCommandEncoder();
-        // assert compute_encoder != nullptr
+        HAZE_ASSERT( compute_encoder != nullptr, "HAZEgpu::metal_ops::blocking_id: failed to create compute encoder" );
 
         // set pipeline
         compute_encoder->setComputePipelineState( this->f_pipe_map_[ method ] );
@@ -149,6 +134,8 @@ void metal_ops< Pixel >::blur_image ( image< Pixel > const & src, image< Pixel >
         MTL::Buffer *  src_gpu = device_->newBuffer(  src_size, MTL::ResourceStorageModeManaged );
         MTL::Buffer * dest_gpu = device_->newBuffer( dest_size, MTL::ResourceStorageModeManaged );
         MTL::Buffer * meta_gpu = device_->newBuffer( meta_size, MTL::ResourceStorageModeManaged );
+
+        HAZE_ASSERT( src_gpu != nullptr && dest_gpu != nullptr && meta_gpu != nullptr, "HAZEgpu::metal_ops::blur_image: failed to create gpu buffers" );
 
         char *  src_ptr = static_cast< char * >(  src_gpu->contents() );
         char * dest_ptr = static_cast< char * >( dest_gpu->contents() );
