@@ -5999,6 +5999,9 @@ _MTL_INLINE void MTL::StageInputOutputDescriptor::reset()
     Object::sendMessage<void>(this, _MTL_PRIVATE_SEL(reset));
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wgnu-anonymous-struct"
+#pragma GCC diagnostic ignored "-Wnested-anon-types"
 namespace MTL
 {
 struct PackedFloat3
@@ -6021,6 +6024,7 @@ struct PackedFloat3
         float elements[3];
     };
 } _MTL_PACKED;
+#pragma GCC diagnostic pop
 
 struct PackedFloat4x3
 {
@@ -14574,7 +14578,10 @@ public:
 
     class Buffer*                   newBuffer(const void* pointer, NS::UInteger length, MTL::ResourceOptions options);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
     class Buffer*                   newBuffer(const void* pointer, NS::UInteger length, MTL::ResourceOptions options, const void (^deallocator)(void*, NS::UInteger));
+#pragma GCC diagnostic pop
 
     class DepthStencilState*        newDepthStencilState(const class DepthStencilDescriptor* descriptor);
 
@@ -15059,10 +15066,13 @@ _MTL_INLINE MTL::Buffer* MTL::Device::newBuffer(const void* pointer, NS::UIntege
     return Object::sendMessage<MTL::Buffer*>(this, _MTL_PRIVATE_SEL(newBufferWithBytes_length_options_), pointer, length, options);
 }
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
 _MTL_INLINE MTL::Buffer* MTL::Device::newBuffer(const void* pointer, NS::UInteger length, MTL::ResourceOptions options, const void (^deallocator)(void*, NS::UInteger))
 {
     return Object::sendMessage<MTL::Buffer*>(this, _MTL_PRIVATE_SEL(newBufferWithBytesNoCopy_length_options_deallocator_), pointer, length, options, deallocator);
 }
+#pragma GCC diagnostic pop
 
 _MTL_INLINE MTL::DepthStencilState* MTL::Device::newDepthStencilState(const MTL::DepthStencilDescriptor* descriptor)
 {
