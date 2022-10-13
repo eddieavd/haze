@@ -1,6 +1,8 @@
 *build*
 *compile*
 .cache
+*.air
+*.metallib
 *.swp
 *.swo
 .DS_Store
