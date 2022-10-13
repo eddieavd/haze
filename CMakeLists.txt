@@ -7,12 +7,8 @@ option( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 set( CMAKE_CXX_STANDARD          20   )
 set( CMAKE_CXX_STANDARD_REQUIRED True )
 
-add_compile_options( -Wall -Wextra -pedantic -O3 )
+add_compile_options( -Wall -Wextra -pedantic -O0 )
 #add_link_options( -fsanitize=address -fsanitize=undefined )
-
-add_subdirectory( include )
-add_subdirectory(    test )
-add_subdirectory(   bench )
 
 if( HAZE_DEBUG )
         add_compile_options( -DHAZE_DEBUG -DNPL_DEBUG )
@@ -24,9 +20,8 @@ endif()
 
 add_executable( HAZElib main.cpp )
 
-target_link_libraries( HAZElib PUBLIC ${EXTRA_LIBS} )
+add_subdirectory( include )
+add_subdirectory(    test )
+add_subdirectory(   bench )
 
-if( METAL )
-        add_link_options( -fno-objc-arc )
-        target_link_libraries( HAZElib PUBLIC "-framework Metal" "-framework MetalKit" "-framework Foundation" )
-endif()
+target_link_libraries( HAZElib PUBLIC ${EXTRA_LIBS} )
