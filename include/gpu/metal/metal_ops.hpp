@@ -291,7 +291,7 @@ void metal_ops< Pixel >::_mean_blur ( MTL::Buffer * src, MTL::Buffer * dest, MTL
 
         if constexpr( Pixel::is_thicc )
         {
-                method = "mean_blur_thicc_field";
+                method = "mean_blur_field_thicc";
         }
         else
         {
@@ -310,7 +310,7 @@ void metal_ops< Pixel >::_lens_blur ( MTL::Buffer * src, MTL::Buffer * dest, MTL
 
         if constexpr( Pixel::is_thicc )
         {
-                method = "lens_blur_thicc_field";
+                method = "lens_blur_field_thicc";
         }
         else
         {
