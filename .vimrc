@@ -9,7 +9,7 @@ let g:cmake_variants =
     \   },
     \   'metal-release' : {
     \       'cmake_build_type' : 'Release',
-    \       'cmake_usr_args'   : '-DGPU=ON -DMETAL=ON -DHAZE_RELEASE=ON'
+    \       'cmake_usr_args'   : '-DGPU=ON -DMETAL=ON -DHAZE_RELEASE=ON -DGBENCH=ON'
     \   },
     \   'debug': {
     \       'cmake_build_type' : 'Debug',

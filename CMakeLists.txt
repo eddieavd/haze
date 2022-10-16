@@ -7,7 +7,7 @@ option( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 set( CMAKE_CXX_STANDARD          20   )
 set( CMAKE_CXX_STANDARD_REQUIRED True )
 
-add_compile_options( -Wall -Wextra -pedantic -O0 )
+add_compile_options( -Wall -Wextra -pedantic -O3 )
 #add_link_options( -fsanitize=address -fsanitize=undefined )
 
 if( HAZE_DEBUG )
@@ -18,10 +18,18 @@ if( HAZE_RELEASE )
         add_compile_options( -DHAZE_RELEASE -DNPL_RELEASE )
 endif()
 
+if( GPU )
+        add_compile_options( -DGPU )
+
+        if( METAL )
+                add_compile_options( -DMETAL )
+        endif()
+endif()
+
 add_executable( HAZElib main.cpp )
 
 add_subdirectory( include )
 add_subdirectory(    test )
 add_subdirectory(   bench )
 
-target_link_libraries( HAZElib PUBLIC ${EXTRA_LIBS} )
+#target_link_libraries( HAZElib PUBLIC ${EXTRA_LIBS} )

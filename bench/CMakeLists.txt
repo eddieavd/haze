@@ -8,4 +8,8 @@ if( GBENCH )
 
         target_link_libraries( gbench_haze PUBLIC benchmark::benchmark      )
         target_link_libraries( gbench_haze PUBLIC benchmark::benchmark_main )
+
+        if( METAL )
+                target_link_libraries( gbench_haze PUBLIC "-framework Metal" "-framework MetalKit" "-framework Foundation" )
+        endif()
 endif()
