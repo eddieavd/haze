@@ -10,7 +10,7 @@
 
 #include "../include/HAZElib.hpp"
 
-#define IMG_PATH "image.png"
+#define IMG_PATH "city2.jpeg"
 
 
 namespace haze_bench
@@ -18,13 +18,7 @@ namespace haze_bench
 
 
 template< typename Pixel >
-static void bm_blur_cpu_kern ( [[ maybe_unused ]] benchmark::State & state )
-{
-
-}
-
-template< typename Pixel >
-static void bm_blur_cpu_prefix ( benchmark::State & state )
+static void bm_mean_blur_field ( benchmark::State & state )
 {
         haze::pixel_field< Pixel > field( IMG_PATH );
 
@@ -35,28 +29,113 @@ static void bm_blur_cpu_prefix ( benchmark::State & state )
                 benchmark::ClobberMemory();
                 benchmark::DoNotOptimize( blurred );
         }
+
+        state.counters[    "iwidth" ] = field.width();
+        state.counters[   "iheight" ] = field.height();
+        state.counters[ "total_pix" ] = field.width() * field.height();
 }
 
 template< typename Pixel >
-static void bm_blur_gpu_kern ( benchmark::State & state )
+static void bm_mean_blur_field_metal ( benchmark::State & state )
 {
-        haze::gpu_ops< Pixel > gpu_ops;
-        haze::image< Pixel > img( IMG_PATH );
+        haze::gpu_ops< Pixel > gpu;
+
+        haze::pixel_field< Pixel > field( IMG_PATH );
 
         for( auto _ : state )
         {
-                auto blurred = gpu_ops.blur_image( img, state.range( 0 ) );
+                auto blurred = gpu.mean_blur( field, state.range( 0 ) );
 
                 benchmark::ClobberMemory();
                 benchmark::DoNotOptimize( blurred );
         }
+
+        state.counters[    "iwidth" ] = field.width();
+        state.counters[   "iheight" ] = field.height();
+        state.counters[ "total_pix" ] = field.width() * field.height();
+}
+
+/*
+template< typename Pixel >
+static void bm_mean_blur_kern_metal ( benchmark::State & state )
+{
+        haze::gpu_ops< Pixel > gpu;
+
+        haze::image< Pixel > img( IMG_PATH );
+
+        for( auto _ : state )
+        {
+                auto blurred = gpu.mean_blur( img, state.range( 0 ) );
+
+                benchmark::ClobberMemory();
+                benchmark::DoNotOptimize( blurred );
+        }
+
+        state.counters[    "iwidth" ] = img.width();
+        state.counters[   "iheight" ] = img.height();
+        state.counters[ "total_pix" ] = img.width() * img.height();
+}
+*/
+
+template< typename Pixel >
+static void bm_lens_blur_field ( benchmark::State & state )
+{
+        haze::pixel_field< Pixel > field( IMG_PATH );
+
+        for( auto _ : state )
+        {
+                auto blurred = field.get_lens_blurred_image( state.range( 0 ) );
+
+                benchmark::ClobberMemory();
+                benchmark::DoNotOptimize( blurred );
+        }
+
+        state.counters[    "iwidth" ] = field.width();
+        state.counters[   "iheight" ] = field.height();
+        state.counters[ "total_pix" ] = field.width() * field.height();
 }
 
 template< typename Pixel >
-static void bm_blur_gpu_prefix ( [[ maybe_unused ]] benchmark::State & state )
+static void bm_lens_blur_field_metal ( benchmark::State & state )
 {
+        haze::gpu_ops< Pixel > gpu;
 
+        haze::pixel_field< Pixel > field( IMG_PATH );
+
+        for( auto _ : state )
+        {
+                auto blurred = gpu.lens_blur( field, state.range( 0 ) );
+
+                benchmark::ClobberMemory();
+                benchmark::DoNotOptimize( blurred );
+        }
+
+        state.counters[    "iwidth" ] = field.width();
+        state.counters[   "iheight" ] = field.height();
+        state.counters[ "total_pix" ] = field.width() * field.height();
 }
+
+/*
+template< typename Pixel >
+static void bm_lens_blur_kern_metal ( benchmark::State & state )
+{
+        haze::gpu_ops< Pixel > gpu;
+
+        haze::image< Pixel > img( IMG_PATH );
+
+        for( auto _ : state )
+        {
+                auto blurred = gpu.lens_blur( img, state.range( 0 ) );
+
+                benchmark::ClobberMemory();
+                benchmark::DoNotOptimize( blurred );
+        }
+
+        state.counters[    "iwidth" ] = img.width();
+        state.counters[   "iheight" ] = img.height();
+        state.counters[ "total_pix" ] = img.width() * img.height();
+}
+*/
 
 
 } // haze_bench

@@ -57,7 +57,9 @@ template< typename Pixel >
 class pixel_field
 {
 public:
+        using value_type = unsigned long;
         using pixel_type = Pixel;
+        using pixel_v_t  = typename pixel_type::value_type;
 
         pixel_field ( image< Pixel > const & img )
                 : width_( img.width() ), height_( img.height() )
@@ -86,9 +88,9 @@ public:
         pixel_field ( pixel_field< Pixel > const &  ) = delete;
         pixel_field ( pixel_field< Pixel >       && ) = delete;
 
-        unsigned long sum_at ( std::size_t const row, std::size_t const col, std::size_t const channel ) const noexcept
+        value_type sum_at ( std::size_t const row, std::size_t const col, std::size_t const channel ) const noexcept
         {
-                return this->fields_.at( channel ).at( row, col );
+                return this->fields_.at( channel ).range( 0, 0, row, col );
         }
 
         image< Pixel > get_image () const
@@ -156,7 +158,7 @@ private:
         std::size_t height_   { 0 };
         std::size_t channels_ { Pixel::channels };
 
-        std::array< npl::rq::prefix_array< npl::rq::prefix_array< unsigned long > >, Pixel::channels > fields_;
+        std::array< npl::rq::prefix_array< npl::rq::prefix_array< value_type > >, Pixel::channels > fields_;
 
         void _fill_pixel_field ( image< Pixel > const & img );
         void _fill_pixel_field ( stbi_uc              * raw );
@@ -184,7 +186,7 @@ void pixel_field< Pixel >::_fill_pixel_field ( image< Pixel > const & img )
         {
                 for( std::size_t c = 0; c < Pixel::channels; ++c )
                 {
-                        npl::rq::prefix_array< unsigned long > line;
+                        npl::rq::prefix_array< value_type  > line;
 
                         for( std::size_t j = 0; j < img.width(); ++j )
                         {
@@ -203,7 +205,7 @@ void pixel_field< Pixel >::_fill_pixel_field ( stbi_uc * raw )
         {
                 for( std::size_t c = 0; c < Pixel::channels; ++c )
                 {
-                        npl::rq::prefix_array< unsigned long > line;
+                        npl::rq::prefix_array< value_type > line;
 
                         for( std::size_t j = 0; j < width_; ++j )
                         {
@@ -230,7 +232,7 @@ void pixel_field< Pixel >::_fill_image ( image< Pixel > & dest, std::size_t cons
                 {
                         for( std::size_t c = 0; c < Pixel::channels; ++c )
                         {
-                                dest.at( i - y1, j - x1 ).values[ c ] = this->fields_.at( c ).range( i, j, i, j );
+                                dest.at( i - y1, j - x1 ).values[ c ] = static_cast< pixel_v_t >( this->fields_.at( c ).range( i, j, i, j ) );
                         }
                 }
         }
@@ -265,7 +267,7 @@ void pixel_field< Pixel >::_blur_image ( image< Pixel > & dest, std::size_t cons
                                         avg = 255;
                                 }
 
-                                dest.at( i - y1, j - x1 ).values[ c ] = avg;
+                                dest.at( i - y1, j - x1 ).values[ c ] = static_cast< pixel_v_t >( avg );
                         }
                 }
         }
@@ -326,7 +328,7 @@ void pixel_field< Pixel >::_lens_blur_image ( image< Pixel > & dest, std::size_t
                                         avg = 255;
                                 }
 
-                                dest.at( i - y1, j - x1 ).values[ c ] = avg;
+                                dest.at( i - y1, j - x1 ).values[ c ] = static_cast< pixel_v_t >( avg );
                         }
                 }
         }

@@ -25,9 +25,6 @@ add_custom_target(
 
 add_dependencies( HAZElib metal_lib )
 
-add_link_options( -fno-objc-arc )
-add_compile_options( -DMETAL )
-
 target_link_libraries( HAZElib PUBLIC
         "-framework Metal"
         "-framework MetalKit"

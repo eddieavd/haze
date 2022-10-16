@@ -22,6 +22,7 @@ struct pixel
 {
         using value_type = std::uint8_t;
 
+        constexpr static bool        is_thicc{    false };
         constexpr static std::size_t channels{ Channels };
 
         value_type values[ Channels ];
@@ -48,6 +49,7 @@ struct thicc_pixel
 {
         using value_type = unsigned long;
 
+        constexpr static bool        is_thicc{     true };
         constexpr static std::size_t channels{ Channels };
 
         value_type values[ Channels ];

@@ -22,32 +22,35 @@ namespace haze
 template< typename Pixel >
 class gpu_ops
 {
+        static_assert( Pixel::is_thicc );
+
 public:
         gpu_ops ()
 #ifdef METAL
-                : device_( MTL::CreateSystemDefaultDevice() ),
-                  mtl_ops( device_ )
+                : mtl_ops( MTL::CreateSystemDefaultDevice() )
 #else
-
 #endif
         {}
 
-        image< Pixel > blur_image ( image< Pixel > const & src, int const blur_radius )
+        image< Pixel > mean_blur ( pixel_field< Pixel > const & src, unsigned const blur_radius )
         {
-                image< Pixel > blr( src.width() - blur_radius, src.height() - blur_radius );
 #ifdef METAL
-                mtl_ops.blur_image( src, blr, blur_radius );
+                return mtl_ops.mean_blur( src, blur_radius );
 #else
-
 #endif
-                return blr;
+        }
+
+        image< Pixel > lens_blur ( pixel_field< Pixel > const & src, unsigned const blur_radius )
+        {
+#ifdef METAL
+                return mtl_ops.lens_blur( src, blur_radius );
+#else
+#endif
         }
 private:
 #ifdef METAL
-        MTL::Device * device_;
         metal_ops< Pixel > mtl_ops;
 #else
-
 #endif
 };
 

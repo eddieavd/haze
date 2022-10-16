@@ -11,11 +11,11 @@ namespace haze_bench
 {
 
 
-BENCHMARK( bm_blur_cpu_prefix< haze::bw_pixel > )->RangeMultiplier( 2 )->Range( 2, 128 )->Unit( benchmark::kMillisecond );
-BENCHMARK( bm_blur_gpu_kern  < haze::bw_pixel > )->RangeMultiplier( 2 )->Range( 2, 128 )->Unit( benchmark::kMillisecond );
+BENCHMARK( bm_mean_blur_field      < haze::thicc_rgb_pixel > )->RangeMultiplier( 2 )->Range( 2, 128 )->Unit( benchmark::kMillisecond );
+BENCHMARK( bm_mean_blur_field_metal< haze::thicc_rgb_pixel > )->RangeMultiplier( 2 )->Range( 2, 128 )->Unit( benchmark::kMillisecond );
 
-BENCHMARK( bm_blur_cpu_prefix< haze::rgb_pixel > )->RangeMultiplier( 2 )->Range( 2, 128 )->Unit( benchmark::kMillisecond );
-BENCHMARK( bm_blur_gpu_kern  < haze::rgb_pixel > )->RangeMultiplier( 2 )->Range( 2, 128 )->Unit( benchmark::kMillisecond );
+BENCHMARK( bm_lens_blur_field      < haze::thicc_rgb_pixel > )->RangeMultiplier( 2 )->Range( 2,  16 )->Unit( benchmark::kMillisecond );
+BENCHMARK( bm_lens_blur_field_metal< haze::thicc_rgb_pixel > )->RangeMultiplier( 2 )->Range( 2, 128 )->Unit( benchmark::kMillisecond );
 
 
 } // namespace haze_bench

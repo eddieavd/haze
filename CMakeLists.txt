@@ -23,6 +23,7 @@ if( GPU )
 
         if( METAL )
                 add_compile_options( -DMETAL )
+                add_link_options( -fno-objc-arc )
         endif()
 endif()
 
