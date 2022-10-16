@@ -31,11 +31,7 @@ template< typename Pixel >
 class metal_ops
 {
 public:
-        MTL::Device * device_;
-
         metal_ops ( MTL::Device * device );
-
-        void blocking_id ( std::vector< MTL::Buffer * > const & buffers, std::size_t arr_len, char const * method );
 
         image< Pixel > mean_blur_kern ( image< Pixel > const & src, int const blur_radius );
         image< Pixel > lens_blur_kern ( image< Pixel > const & src, int const blur_radius );
@@ -46,6 +42,7 @@ private:
         std::map< std::string, MTL::Function * > f_map_;
         std::map< std::string, MTL::ComputePipelineState * > f_pipe_map_;
 
+        MTL::Device       * device_;
         MTL::CommandQueue * command_q_;
 
         MTL::Buffer * _create_empty_buffer ( std::size_t const size );
@@ -54,6 +51,8 @@ private:
         MTL::Buffer * _create_buffer ( pixel_field< Pixel > const & src, std::size_t const channel );
 
         MTL::Buffer * _create_meta_buffer ( unsigned const width, unsigned const blur_radius = 0 );
+
+        void _blocking_id ( std::vector< MTL::Buffer * > const & buffers, std::size_t arr_len, char const * method );
 
         void _read_buffer ( image< Pixel > & img, MTL::Buffer * buffer, std::size_t const width, std::size_t const height, std::size_t const channel );
 
@@ -99,7 +98,7 @@ metal_ops< Pixel >::metal_ops ( MTL::Device * device )
 }
 
 template< typename Pixel >
-void metal_ops< Pixel >::blocking_id ( std::vector< MTL::Buffer * > const & buffers, std::size_t arr_len, char const * method )
+void metal_ops< Pixel >::_blocking_id ( std::vector< MTL::Buffer * > const & buffers, std::size_t arr_len, char const * method )
 {
         // create new buffer
         MTL::CommandBuffer * command_buffer = this->command_q_->commandBuffer();
@@ -261,7 +260,7 @@ void metal_ops< Pixel >::_mean_blur_kern ( MTL::Buffer * src, MTL::Buffer * dest
                 method = "mean_blur_kern";
         }
 
-        this->blocking_id( buffers, dest_len, method.c_str() );
+        this->_blocking_id( buffers, dest_len, method.c_str() );
 }
 
 template< typename Pixel >
@@ -280,7 +279,7 @@ void metal_ops< Pixel >::_lens_blur_kern ( MTL::Buffer * src, MTL::Buffer * dest
                 method = "lens_blur_kern";
         }
 
-        this->blocking_id( buffers, dest_len, method.c_str() );
+        this->_blocking_id( buffers, dest_len, method.c_str() );
 }
 
 template< typename Pixel >
@@ -299,7 +298,7 @@ void metal_ops< Pixel >::_mean_blur ( MTL::Buffer * src, MTL::Buffer * dest, MTL
                 method = "mean_blur_field";
         }
 
-        this->blocking_id( buffers, dest_len, method.c_str() );
+        this->_blocking_id( buffers, dest_len, method.c_str() );
 }
 
 template< typename Pixel >
@@ -318,7 +317,7 @@ void metal_ops< Pixel >::_lens_blur ( MTL::Buffer * src, MTL::Buffer * dest, MTL
                 method = "lens_blur_field";
         }
 
-        this->blocking_id( buffers, dest_len, method.c_str() );
+        this->_blocking_id( buffers, dest_len, method.c_str() );
 }
 
 template< typename Pixel >
