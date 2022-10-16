@@ -6,8 +6,6 @@
 
 #pragma once
 
-#define METAL
-
 
 #ifdef METAL
 #       include "metal/metal_ops.hpp"

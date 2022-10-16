@@ -20,7 +20,11 @@ namespace haze
 template< std::size_t Channels >
 struct pixel
 {
-        std::uint8_t values[ Channels ];
+        using value_type = std::uint8_t;
+
+        constexpr static std::size_t channels{ Channels };
+
+        value_type values[ Channels ];
 
         constexpr bool operator== ( pixel< Channels > const & other ) const noexcept
         {
@@ -39,11 +43,39 @@ struct    bw_pixel : pixel< 1 > {};
 struct   rgb_pixel : pixel< 3 > {};
 struct alpha_pixel : pixel< 4 > {};
 
+template< std::size_t Channels >
+struct thicc_pixel
+{
+        using value_type = unsigned long;
+
+        constexpr static std::size_t channels{ Channels };
+
+        value_type values[ Channels ];
+
+        constexpr bool operator== ( thicc_pixel< Channels > const & other ) const noexcept
+        {
+                for( std::size_t c = 0; c < Channels; ++c )
+                {
+                        if( values[ c ] != other.values[ c ] )
+                        {
+                                return false;
+                        }
+                }
+                return true;
+        }
+};
+
+struct    thicc_bw_pixel : thicc_pixel< 1 > {};
+struct   thicc_rgb_pixel : thicc_pixel< 3 > {};
+struct thicc_alpha_pixel : thicc_pixel< 4 > {};
+
 
 template< typename Pixel >
 class image
 {
 public:
+        using pixel_type = Pixel;
+
         constexpr image () noexcept = default;
 
         image ( std::size_t const width, std::size_t const height )
@@ -129,7 +161,7 @@ public:
         [[ nodiscard ]] constexpr auto     data () const noexcept { return this->data_    ; }
         [[ nodiscard ]] constexpr auto    width () const noexcept { return this->width_   ; }
         [[ nodiscard ]] constexpr auto   height () const noexcept { return this->height_  ; }
-        [[ nodiscard ]] constexpr auto channels () const noexcept { return sizeof( Pixel ); }
+        [[ nodiscard ]] constexpr auto channels () const noexcept { return Pixel::channels; }
 
         [[ nodiscard ]] constexpr bool    empty () const noexcept { return this->data_ == nullptr; }
 

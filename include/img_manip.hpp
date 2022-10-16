@@ -57,6 +57,8 @@ template< typename Pixel >
 class pixel_field
 {
 public:
+        using pixel_type = Pixel;
+
         pixel_field ( image< Pixel > const & img )
                 : width_( img.width() ), height_( img.height() )
         {
@@ -69,7 +71,7 @@ public:
                 int height_file;
                 int channels_file;
 
-                stbi_uc * raw_data = stbi_load( filename.c_str(), &width_file, &height_file, &channels_file, sizeof( Pixel ) );
+                stbi_uc * raw_data = stbi_load( filename.c_str(), &width_file, &height_file, &channels_file, Pixel::channels );
 
                 if( raw_data )
                 {
@@ -83,6 +85,11 @@ public:
 
         pixel_field ( pixel_field< Pixel > const &  ) = delete;
         pixel_field ( pixel_field< Pixel >       && ) = delete;
+
+        unsigned long sum_at ( std::size_t const row, std::size_t const col, std::size_t const channel ) const noexcept
+        {
+                return this->fields_.at( channel ).at( row, col );
+        }
 
         image< Pixel > get_image () const
         {
@@ -128,6 +135,17 @@ public:
                 return blr;
         }
 
+        image< Pixel > get_lens_blurred_image ( std::size_t const blur_radius ) const
+        {
+                HAZE_ASSERT( !empty(), "pixel_field::get_lens_blurred_image: called on empty pixel field" );
+
+                image< Pixel > blr( width_, height_ );
+
+                _lens_blur_image( blr, blur_radius );
+
+                return blr;
+        }
+
         [[ nodiscard ]] constexpr auto    width () const noexcept { return this->width_   ; }
         [[ nodiscard ]] constexpr auto   height () const noexcept { return this->height_  ; }
         [[ nodiscard ]] constexpr auto channels () const noexcept { return this->channels_; }
@@ -136,9 +154,9 @@ public:
 private:
         std::size_t width_    { 0 };
         std::size_t height_   { 0 };
-        std::size_t channels_ { sizeof( Pixel ) };
+        std::size_t channels_ { Pixel::channels };
 
-        std::array< npl::rq::prefix_array< npl::rq::prefix_array< long long > >, sizeof( Pixel ) > fields_;
+        std::array< npl::rq::prefix_array< npl::rq::prefix_array< unsigned long > >, Pixel::channels > fields_;
 
         void _fill_pixel_field ( image< Pixel > const & img );
         void _fill_pixel_field ( stbi_uc              * raw );
@@ -152,6 +170,11 @@ private:
         void _blur_image ( image< Pixel > & dest, std::size_t const blur_radius,
                            std::size_t const x1, std::size_t const y1,
                            std::size_t const x2, std::size_t const y2 ) const noexcept;
+
+        void _lens_blur_image ( image< Pixel > & dest, std::size_t const blur_radius ) const noexcept;
+        void _lens_blur_image ( image< Pixel > & dest, std::size_t const blur_radius,
+                                std::size_t const x1, std::size_t const y1,
+                                std::size_t const x2, std::size_t const y2 ) const noexcept;
 };
 
 template< typename Pixel >
@@ -159,19 +182,16 @@ void pixel_field< Pixel >::_fill_pixel_field ( image< Pixel > const & img )
 {
         for( std::size_t i = 0; i < img.height(); ++i )
         {
-                std::array< npl::rq::prefix_array< long long >, sizeof( Pixel ) > lines;
-
-                for( std::size_t j = 0; j < img.width(); ++j )
+                for( std::size_t c = 0; c < Pixel::channels; ++c )
                 {
-                        for( std::size_t k = 0; k < img.channels(); ++k )
+                        npl::rq::prefix_array< unsigned long > line;
+
+                        for( std::size_t j = 0; j < img.width(); ++j )
                         {
-                                lines.at( k ).push_back( img.at( i, j ).values[ k ] );
+                                line.push_back( img.at( i, j ).values[ c ] );
                         }
-                }
 
-                for( std::size_t k = 0; k < sizeof( Pixel ); ++k )
-                {
-                        this->fields_.at( k ).emplace_back( std::move( lines.at( k ) ) );
+                        this->fields_.at( c ).emplace_back( HAZE_MOVE( line ) );
                 }
         }
 }
@@ -181,19 +201,16 @@ void pixel_field< Pixel >::_fill_pixel_field ( stbi_uc * raw )
 {
         for( std::size_t i = 0; i < height_; ++i )
         {
-                std::array< npl::rq::prefix_array< long long >, sizeof( Pixel ) > lines;
-
-                for( std::size_t j = 0; j < width_; ++j )
+                for( std::size_t c = 0; c < Pixel::channels; ++c )
                 {
-                        for( std::size_t k = 0; k < channels_; ++k )
+                        npl::rq::prefix_array< unsigned long > line;
+
+                        for( std::size_t j = 0; j < width_; ++j )
                         {
-                                lines.at( k ).push_back( raw[ i * width_ * channels_ + j * channels_ + k ] );
+                                line.push_back( raw[ i * width_ * channels_ + j * channels_ + c ] );
                         }
-                }
 
-                for( std::size_t k = 0; k < sizeof( Pixel ); ++k )
-                {
-                        this->fields_.at( k ).emplace_back( std::move( lines.at( k ) ) );
+                        this->fields_.at( c ).emplace_back( HAZE_MOVE( line ) );
                 }
         }
 }
@@ -211,7 +228,7 @@ void pixel_field< Pixel >::_fill_image ( image< Pixel > & dest, std::size_t cons
         {
                 for( std::size_t j = x1; j <= x2; ++j )
                 {
-                        for( std::size_t c = 0; c < sizeof( Pixel ); ++c )
+                        for( std::size_t c = 0; c < Pixel::channels; ++c )
                         {
                                 dest.at( i - y1, j - x1 ).values[ c ] = this->fields_.at( c ).range( i, j, i, j );
                         }
@@ -236,11 +253,78 @@ void pixel_field< Pixel >::_blur_image ( image< Pixel > & dest, std::size_t cons
                 {
                         current_blur_radius = std::min( { blur_radius, i, j, y2 - i, x2 - j } );
 
-                        for( std::size_t c = 0; c < sizeof( Pixel ); ++c )
+                        for( std::size_t c = 0; c < Pixel::channels; ++c )
                         {
-                                auto avg = this->fields_.at( c ).range( i - current_blur_radius / 2, j - current_blur_radius / 2, i + current_blur_radius / 2, j + current_blur_radius / 2 );
+                                auto avg = this->fields_.at( c ).range( i - current_blur_radius / 2, j - current_blur_radius / 2,
+                                                                        i + current_blur_radius / 2, j + current_blur_radius / 2 );
 
                                 avg /= current_blur_radius * current_blur_radius;
+
+                                if( avg > 255 )
+                                {
+                                        avg = 255;
+                                }
+
+                                dest.at( i - y1, j - x1 ).values[ c ] = avg;
+                        }
+                }
+        }
+}
+
+template< typename Pixel >
+void pixel_field< Pixel >::_lens_blur_image ( image< Pixel > & dest, std::size_t const blur_radius ) const noexcept
+{
+        _lens_blur_image( dest, blur_radius, 0, 0, this->width_ - 1, this->height_ - 1 );
+}
+
+template< typename Pixel >
+void pixel_field< Pixel >::_lens_blur_image ( image< Pixel > & dest, std::size_t const blur_radius, std::size_t const x1, std::size_t const y1, std::size_t const x2, std::size_t const y2 ) const noexcept
+{
+        std::size_t current_blur_radius = blur_radius;
+
+        for( std::size_t i = y1; i <= y2; ++i )
+        {
+                for( std::size_t j = x1; j <= x2; ++j )
+                {
+                        current_blur_radius = std::min( { blur_radius, i, j, y2 - i, x2 - j } );
+
+                        for( std::size_t c = 0; c < Pixel::channels; ++c )
+                        {
+                                auto avg = this->fields_.at( c ).range( i - current_blur_radius / 2, j - current_blur_radius / 2,
+                                                                        i + current_blur_radius / 2, j + current_blur_radius / 2 );
+
+                                int excl_cnt = 0;
+
+                                for( std::size_t y0 = 0; y0 < current_blur_radius / 2; ++y0 )
+                                {
+                                        for( std::size_t x0 = 0; x0 < current_blur_radius / 2; ++x0 )
+                                        {
+                                                auto xx = current_blur_radius / 2 + x0;
+                                                auto yy = current_blur_radius / 2 + y0;
+
+                                                if( xx * xx + yy * yy > current_blur_radius * current_blur_radius )
+//                                              if( x0 + y0 < current_blur_radius / 2 )
+                                                {
+                                                        avg -= this->fields_.at( c ).element_at( i + y0 - current_blur_radius / 2, j + x0 - current_blur_radius / 2 );
+                                                        avg -= this->fields_.at( c ).element_at( i + y0 - current_blur_radius / 2, j + current_blur_radius / 2 - x0 );
+                                                        avg -= this->fields_.at( c ).element_at( i + current_blur_radius / 2 - y0, j + x0 - current_blur_radius / 2 );
+                                                        avg -= this->fields_.at( c ).element_at( i + current_blur_radius / 2 - y0, j + current_blur_radius / 2 - x0 );
+
+                                                        excl_cnt += 4;
+                                                }
+                                                else
+                                                {
+                                                        break;
+                                                }
+                                        }
+                                }
+
+                                avg /= current_blur_radius * current_blur_radius - excl_cnt;
+
+                                if( avg > 255 )
+                                {
+                                        avg = 255;
+                                }
 
                                 dest.at( i - y1, j - x1 ).values[ c ] = avg;
                         }

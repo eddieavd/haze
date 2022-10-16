@@ -32,7 +32,7 @@ template< typename Pixel >
 constexpr void raw_to_pixels ( stbi_uc *  raw_data, Pixel * pixels, std::size_t const width, std::size_t const height, std::size_t const channels );
 
 template< typename Pixel >
-constexpr void pixels_to_raw ( Pixel * pixels, stbi_uc * raw_data, std::size_t const width, std::size_t const height, std::size_t const channels = sizeof( Pixel ) );
+constexpr void pixels_to_raw ( Pixel * pixels, stbi_uc * raw_data, std::size_t const width, std::size_t const height, std::size_t const channels = Pixel::channels );
 
 template< typename Pixel >
 constexpr Pixel * load_image ( std::string const & filename, std::size_t * width, std::size_t * height );
@@ -72,7 +72,7 @@ constexpr void _pixels_to_raw_impl ( Pixel * pixels, stbi_uc * raw_data, std::si
                 {
                         for( std::size_t c = 0; c < channels; ++c )
                         {
-                                raw_data[ i * width * channels + j * channels + c ] = pixels[ i * width + j ].values[ c ];
+                                raw_data[ i * width * channels + j * channels + c ] = static_cast< stbi_uc >( pixels[ i * width + j ].values[ c ] );
                         }
                 }
         }
@@ -85,14 +85,14 @@ constexpr Pixel * _load_image_impl ( std::string const & filename, std::size_t *
         int height_file   { 0 };
         int channels_file { 0 };
 
-        stbi_uc * raw_data = stbi_load( filename.c_str(), &width_file, &height_file, &channels_file, sizeof( Pixel ) );
+        stbi_uc * raw_data = stbi_load( filename.c_str(), &width_file, &height_file, &channels_file, Pixel::channels );
 
         *width  = width_file;
         *height = height_file;
 
         Pixel * pixels = new Pixel[ width_file * height_file ];
 
-        _raw_to_pixels_impl( raw_data, pixels, *width, *height, sizeof( Pixel ) );
+        _raw_to_pixels_impl( raw_data, pixels, *width, *height, Pixel::channels );
 
         stbi_image_free( raw_data );
 
