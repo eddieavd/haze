@@ -6,23 +6,23 @@
 
 #include "include/HAZElib.hpp"
 
-#include "include/img_manip.hpp"
+#ifndef METAL
+#define METAL
+#endif
+
+#define IMG_PATH "city2.jpeg"
 
 
-[[ maybe_unused ]] constexpr static int blur_radius( 32 );
+[[ maybe_unused ]] constexpr static unsigned blur_radius( 64 );
 
 int main ()
 {
-        haze::image< haze::bw_pixel > img( "pixel.png" );
+        haze::gpu_ops    < haze::thicc_rgb_pixel > gpu;
+        haze::pixel_field< haze::thicc_rgb_pixel > field( IMG_PATH );
 
-        auto naive = haze::scale_image( img, 100, haze::scaling_options::interpolation_type::naive            );
-        auto neigh = haze::scale_image( img, 100, haze::scaling_options::interpolation_type::nearest_neighbor );
-        auto bilin = haze::scale_image( img, 100, haze::scaling_options::interpolation_type::bilinear         );
+        haze::image blurred = gpu.lens_blur( field, blur_radius );
 
-        haze::util::write_to_png( naive, "naive.png" );
-        haze::util::write_to_png( neigh, "neigh.png" );
-        haze::util::write_to_png( bilin, "bilin.png" );
-
+        haze::util::write_to_png( blurred, "gpu_lens.png" );
 
 
 	return 0;
