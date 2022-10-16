@@ -10,7 +10,7 @@
 
 #include "../include/HAZElib.hpp"
 
-#define IMG_PATH "city2.jpeg"
+#define IMG_PATH "lake.jpeg"
 
 
 namespace haze_bench
@@ -55,7 +55,6 @@ static void bm_mean_blur_field_metal ( benchmark::State & state )
         state.counters[ "total_pix" ] = field.width() * field.height();
 }
 
-/*
 template< typename Pixel >
 static void bm_mean_blur_kern_metal ( benchmark::State & state )
 {
@@ -75,7 +74,6 @@ static void bm_mean_blur_kern_metal ( benchmark::State & state )
         state.counters[   "iheight" ] = img.height();
         state.counters[ "total_pix" ] = img.width() * img.height();
 }
-*/
 
 template< typename Pixel >
 static void bm_lens_blur_field ( benchmark::State & state )
@@ -115,7 +113,6 @@ static void bm_lens_blur_field_metal ( benchmark::State & state )
         state.counters[ "total_pix" ] = field.width() * field.height();
 }
 
-/*
 template< typename Pixel >
 static void bm_lens_blur_kern_metal ( benchmark::State & state )
 {
@@ -135,7 +132,6 @@ static void bm_lens_blur_kern_metal ( benchmark::State & state )
         state.counters[   "iheight" ] = img.height();
         state.counters[ "total_pix" ] = img.width() * img.height();
 }
-*/
 
 
-} // haze_bench
+} // namespace haze_bench

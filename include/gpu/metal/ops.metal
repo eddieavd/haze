@@ -11,85 +11,147 @@
 using namespace metal;
 
 
-kernel void copy_image ( device char const * src, device char * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
+kernel void mean_blur_kern ( device unsigned char const * src, device unsigned char * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
 {
-        unsigned img_width = meta[ 0 ];
+        unsigned img_width   = meta[ 0 ];
+        unsigned blur_radius = meta[ 1 ];
+
+        unsigned half_blur_r = blur_radius / 2;
+        unsigned src_width   = img_width + blur_radius;
 
         unsigned row = index / img_width;
         unsigned col = index % img_width;
 
-        dest[ index ] = src[ row * img_width + col ];
+        unsigned row_src = row + half_blur_r;
+        unsigned col_src = col + half_blur_r;
+
+        float avg = 0;
+
+        for( unsigned i = row_src - half_blur_r; i < row_src + half_blur_r; ++i )
+        {
+                for( unsigned j = col_src - half_blur_r; j < col_src + half_blur_r; ++j )
+                {
+                        avg += src[ i * src_width + j ];
+                }
+        }
+
+        avg /= blur_radius * blur_radius;
+
+        dest[ index ] = static_cast< unsigned char >( avg );
 }
 
-kernel void copy_thicc_image ( device unsigned long const * src, device unsigned long * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
+kernel void mean_blur_kern_thicc ( device unsigned long const * src, device unsigned long * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
 {
-        unsigned img_width = meta[ 0 ];
+        unsigned img_width   = meta[ 0 ];
+        unsigned blur_radius = meta[ 1 ];
+
+        unsigned half_blur_r = blur_radius / 2;
+        unsigned src_width   = img_width + blur_radius;
 
         unsigned row = index / img_width;
         unsigned col = index % img_width;
 
-        dest[ index ] = src[ row * img_width + col ];
+        unsigned row_src = row + half_blur_r;
+        unsigned col_src = col + half_blur_r;
+
+        float avg = 0;
+
+        for( unsigned i = row_src - half_blur_r; i < row_src + half_blur_r; ++i )
+        {
+                for( unsigned j = col_src - half_blur_r; j < col_src + half_blur_r; ++j )
+                {
+                        avg += src[ i * src_width + j ];
+                }
+        }
+
+        avg /= blur_radius * blur_radius;
+
+        dest[ index ] = static_cast< unsigned long >( avg );
 }
 
-kernel void copy_field ( device unsigned long const * src, device char * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
+kernel void lens_blur_kern ( device unsigned char const * src, device unsigned char * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
 {
-        unsigned img_width = meta[ 0 ];
+        unsigned img_width   = meta[ 0 ];
+        unsigned blur_radius = meta[ 1 ];
+
+        unsigned half_blur_r = blur_radius / 2;
+        unsigned src_width   = img_width + blur_radius;
 
         unsigned row = index / img_width;
         unsigned col = index % img_width;
 
-        unsigned long val = 0;
+        unsigned row_src = row + half_blur_r;
+        unsigned col_src = col + half_blur_r;
 
-        if( row == 0 && col == 0 )
+        float    avg      = 0;
+        unsigned incl_cnt = 0;
+
+        for( unsigned i = row_src - half_blur_r; i < row_src + half_blur_r; ++i )
         {
-                val = src[ 0 ];
-        }
-        else if( row == 0 )
-        {
-                val = src[ col ] - src[ col - 1 ];
-        }
-        else if( col == 0 )
-        {
-                val = src[ row * img_width ] - src[ ( row - 1 ) * img_width ];
-        }
-        else
-        {
-                val = src[ row * img_width + col ] - src[ ( row - 1 ) * img_width + col ] - src[ row * img_width + col - 1 ] + src[ ( row - 1 ) * img_width + col - 1 ];
+                for( unsigned j = col_src - half_blur_r; j < col_src + half_blur_r; ++j )
+                {
+                        unsigned kern_x = j + half_blur_r - col_src;
+                        unsigned kern_y = i + half_blur_r - row_src;
+
+                        unsigned xx = half_blur_r - kern_x;
+                        unsigned yy = half_blur_r - kern_y;
+
+                        if( xx * xx + yy * yy > half_blur_r * half_blur_r )
+                        {
+                                avg += src[ i * src_width + j ];
+
+                                incl_cnt++;
+                        }
+                }
         }
 
-        dest[ index ] = static_cast< char >( val );
+        avg /= incl_cnt;
+
+        dest[ index ] = static_cast< unsigned char >( avg );
 }
 
-kernel void copy_thicc_field ( device unsigned long const * src, device unsigned long * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
+kernel void lens_blur_kern_thicc ( device unsigned long const * src, device unsigned long * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
 {
-        unsigned img_width = meta[ 0 ];
+        unsigned img_width   = meta[ 0 ];
+        unsigned blur_radius = meta[ 1 ];
+
+        unsigned half_blur_r = blur_radius / 2;
+        unsigned src_width   = img_width + blur_radius;
 
         unsigned row = index / img_width;
         unsigned col = index % img_width;
 
-        unsigned long val = 0;
+        unsigned row_src = row + half_blur_r;
+        unsigned col_src = col + half_blur_r;
 
-        if( row == 0 && col == 0 )
+        float    avg      = 0;
+        unsigned incl_cnt = 0;
+
+        for( unsigned i = row_src - half_blur_r; i < row_src + half_blur_r; ++i )
         {
-                val = src[ 0 ];
-        }
-        else if( row == 0 )
-        {
-                val = src[ col ] - src[ col - 1 ];
-        }
-        else if( col == 0 )
-        {
-                val = src[ row * img_width ] - src[ ( row - 1 ) * img_width ];
-        }
-        else
-        {
-                val = src[ row * img_width + col ] - src[ ( row - 1 ) * img_width + col ] - src[ row * img_width + col - 1 ] + src[ ( row - 1 ) * img_width + col - 1 ];
+                for( unsigned j = col_src - half_blur_r; j < col_src + half_blur_r; ++j )
+                {
+                        unsigned kern_x = j + half_blur_r - col_src;
+                        unsigned kern_y = i + half_blur_r - row_src;
+
+                        unsigned xx = half_blur_r - kern_x;
+                        unsigned yy = half_blur_r - kern_y;
+
+                        if( xx * xx + yy * yy > half_blur_r * half_blur_r )
+                        {
+                                avg += src[ i * src_width + j ];
+
+                                incl_cnt++;
+                        }
+                }
         }
 
-        dest[ index ] = val;
+        avg /= incl_cnt;
+
+        dest[ index ] = static_cast< unsigned long >( avg );
 }
 
-kernel void mean_blur_field ( device unsigned long const * src, device char * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
+kernel void mean_blur_field ( device unsigned long const * src, device unsigned char * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
 {
         unsigned img_width   = meta[ 0 ];
         unsigned blur_radius = meta[ 1 ];
@@ -130,7 +192,7 @@ kernel void mean_blur_field ( device unsigned long const * src, device char * de
                 avg = 255;
         }
 
-        dest[ index ] = static_cast< char >( avg );
+        dest[ index ] = static_cast< unsigned char >( avg );
 }
 
 kernel void mean_blur_thicc_field ( device unsigned long const * src, device unsigned long * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
@@ -177,7 +239,7 @@ kernel void mean_blur_thicc_field ( device unsigned long const * src, device uns
         dest[ index ] = static_cast< unsigned long >( avg );
 }
 
-kernel void lens_blur_field ( device unsigned long const * src, device char * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
+kernel void lens_blur_field ( device unsigned long const * src, device unsigned char * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
 {
         unsigned img_width   = meta[ 0 ];
         unsigned blur_radius = meta[ 1 ];
@@ -319,7 +381,7 @@ kernel void lens_blur_field ( device unsigned long const * src, device char * de
                 avg = 255;
         }
 
-        dest[ index ] = static_cast< char >( avg );
+        dest[ index ] = static_cast< unsigned char >( avg );
 }
 
 kernel void lens_blur_thicc_field ( device unsigned long const * src, device unsigned long * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )

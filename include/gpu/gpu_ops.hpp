@@ -22,8 +22,6 @@ namespace haze
 template< typename Pixel >
 class gpu_ops
 {
-        static_assert( Pixel::is_thicc );
-
 public:
         gpu_ops ()
 #ifdef METAL
@@ -32,10 +30,26 @@ public:
 #endif
         {}
 
+        image< Pixel > mean_blur ( image< Pixel > const & src, unsigned const blur_radius )
+        {
+#ifdef METAL
+                return mtl_ops.mean_blur_kern( src, blur_radius );
+#else
+#endif
+        }
+
         image< Pixel > mean_blur ( pixel_field< Pixel > const & src, unsigned const blur_radius )
         {
 #ifdef METAL
                 return mtl_ops.mean_blur( src, blur_radius );
+#else
+#endif
+        }
+
+        image< Pixel > lens_blur ( image< Pixel > const & src, unsigned const blur_radius )
+        {
+#ifdef METAL
+                return mtl_ops.lens_blur( src, blur_radius );
 #else
 #endif
         }

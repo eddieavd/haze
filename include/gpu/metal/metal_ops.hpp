@@ -37,6 +37,9 @@ public:
 
         void blocking_id ( std::vector< MTL::Buffer * > const & buffers, std::size_t arr_len, char const * method );
 
+        image< Pixel > mean_blur_kern ( image< Pixel > const & src, int const blur_radius );
+        image< Pixel > lens_blur_kern ( image< Pixel > const & src, int const blur_radius );
+
         image< Pixel > mean_blur ( pixel_field< Pixel > const & src, int const blur_radius );
         image< Pixel > lens_blur ( pixel_field< Pixel > const & src, int const blur_radius );
 private:
@@ -54,8 +57,11 @@ private:
 
         void _read_buffer ( image< Pixel > & img, MTL::Buffer * buffer, std::size_t const width, std::size_t const height, std::size_t const channel );
 
-        void _mean_blur  ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len );
-        void _lens_blur  ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len );
+        void _mean_blur_kern ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len );
+        void _lens_blur_kern ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len );
+
+        void _mean_blur ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len );
+        void _lens_blur ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len );
 };
 
 template< typename Pixel >
@@ -132,6 +138,60 @@ void metal_ops< Pixel >::blocking_id ( std::vector< MTL::Buffer * > const & buff
 }
 
 template< typename Pixel >
+image< Pixel > metal_ops< Pixel >::mean_blur_kern ( image< Pixel > const & src, int const blur_radius )
+{
+        using pixel_v_t = typename Pixel::value_type;
+
+        auto src_width  = src.width();
+        auto src_height = src.height();
+
+        auto dest_width  = src_width  - blur_radius;
+        auto dest_height = src_height - blur_radius;
+
+        image< Pixel > dest_img( dest_width, dest_height );
+
+        for( std::size_t c = 0; c < Pixel::channels; ++c )
+        {
+                MTL::Buffer * src_buffer  = _create_buffer( src, c );
+                MTL::Buffer * dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
+                MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, blur_radius );
+
+                _mean_blur_kern( src_buffer, dest_buffer, meta_buffer, dest_width * dest_height );
+
+                _read_buffer( dest_img, dest_buffer, dest_width, dest_height, c );
+        }
+
+        return dest_img;
+}
+
+template< typename Pixel >
+image< Pixel > metal_ops< Pixel >::lens_blur_kern ( image< Pixel > const & src, int const blur_radius )
+{
+        using pixel_v_t = typename Pixel::value_type;
+
+        auto src_width  = src.width();
+        auto src_height = src.height();
+
+        auto dest_width  = src_width  - blur_radius;
+        auto dest_height = src_height - blur_radius;
+
+        image< Pixel > dest_img( dest_width, dest_height );
+
+        for( std::size_t c = 0; c < Pixel::channels; ++c )
+        {
+                MTL::Buffer * src_buffer  = _create_buffer( src, c );
+                MTL::Buffer * dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
+                MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, blur_radius );
+
+                _lens_blur_kern( src_buffer, dest_buffer, meta_buffer, dest_width * dest_height );
+
+                _read_buffer( dest_img, dest_buffer, dest_width, dest_height, c );
+        }
+
+        return dest_img;
+}
+
+template< typename Pixel >
 image< Pixel > metal_ops< Pixel >::mean_blur ( pixel_field< Pixel > const & src, int const blur_radius )
 {
         using pixel_v_t = typename Pixel::value_type;
@@ -183,6 +243,44 @@ image< Pixel > metal_ops< Pixel >::lens_blur ( pixel_field< Pixel > const & src,
         }
 
         return dest_img;
+}
+
+template< typename Pixel >
+void metal_ops< Pixel >::_mean_blur_kern ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len )
+{
+        std::vector< MTL::Buffer * > buffers( { src, dest, metadata } );
+
+        std::string method;
+
+        if constexpr( Pixel::is_thicc )
+        {
+                method = "mean_blur_kern_thicc";
+        }
+        else
+        {
+                method = "mean_blur_kern";
+        }
+
+        this->blocking_id( buffers, dest_len, method.c_str() );
+}
+
+template< typename Pixel >
+void metal_ops< Pixel >::_lens_blur_kern ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len )
+{
+        std::vector< MTL::Buffer * > buffers( { src, dest, metadata } );
+
+        std::string method;
+
+        if constexpr( Pixel::is_thicc )
+        {
+                method = "lens_blur_kern_thicc";
+        }
+        else
+        {
+                method = "lens_blur_kern";
+        }
+
+        this->blocking_id( buffers, dest_len, method.c_str() );
 }
 
 template< typename Pixel >
