@@ -195,7 +195,7 @@ kernel void mean_blur_field ( device unsigned long const * src, device unsigned 
         dest[ index ] = static_cast< unsigned char >( avg );
 }
 
-kernel void mean_blur_thicc_field ( device unsigned long const * src, device unsigned long * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
+kernel void mean_blur_field_thicc ( device unsigned long const * src, device unsigned long * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
 {
         unsigned img_width   = meta[ 0 ];
         unsigned blur_radius = meta[ 1 ];
@@ -384,7 +384,7 @@ kernel void lens_blur_field ( device unsigned long const * src, device unsigned 
         dest[ index ] = static_cast< unsigned char >( avg );
 }
 
-kernel void lens_blur_thicc_field ( device unsigned long const * src, device unsigned long * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
+kernel void lens_blur_field_thicc ( device unsigned long const * src, device unsigned long * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
 {
         unsigned img_width   = meta[ 0 ];
         unsigned blur_radius = meta[ 1 ];
