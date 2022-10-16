@@ -17,19 +17,19 @@ namespace haze
 {
 
 
-template< std::size_t Channels >
+template< typename T, std::size_t Channels >
 struct pixel
 {
-        using value_type = std::uint8_t;
+        using value_type = T;
 
-        constexpr static bool        is_thicc{    false };
+        constexpr static bool is_thicc{ sizeof( T ) > 1 };
         constexpr static std::size_t channels{ Channels };
 
-        value_type values[ Channels ];
+        value_type values[ channels ];
 
-        constexpr bool operator== ( pixel< Channels > const & other ) const noexcept
+        constexpr bool operator== ( pixel< value_type, channels > const & other ) const noexcept
         {
-                for( std::size_t c = 0; c < Channels; ++c )
+                for( std::size_t c = 0; c < channels; ++c )
                 {
                         if( values[ c ] != other.values[ c ] )
                         {
@@ -40,36 +40,13 @@ struct pixel
         }
 };
 
-struct    bw_pixel : pixel< 1 > {};
-struct   rgb_pixel : pixel< 3 > {};
-struct alpha_pixel : pixel< 4 > {};
+struct    bw_pixel : pixel< std::uint8_t, 1 > {};
+struct   rgb_pixel : pixel< std::uint8_t, 3 > {};
+struct alpha_pixel : pixel< std::uint8_t, 4 > {};
 
-template< std::size_t Channels >
-struct thicc_pixel
-{
-        using value_type = unsigned long;
-
-        constexpr static bool        is_thicc{     true };
-        constexpr static std::size_t channels{ Channels };
-
-        value_type values[ Channels ];
-
-        constexpr bool operator== ( thicc_pixel< Channels > const & other ) const noexcept
-        {
-                for( std::size_t c = 0; c < Channels; ++c )
-                {
-                        if( values[ c ] != other.values[ c ] )
-                        {
-                                return false;
-                        }
-                }
-                return true;
-        }
-};
-
-struct    thicc_bw_pixel : thicc_pixel< 1 > {};
-struct   thicc_rgb_pixel : thicc_pixel< 3 > {};
-struct thicc_alpha_pixel : thicc_pixel< 4 > {};
+struct    thicc_bw_pixel : pixel< unsigned long, 1 > {};
+struct   thicc_rgb_pixel : pixel< unsigned long, 3 > {};
+struct thicc_alpha_pixel : pixel< unsigned long, 4 > {};
 
 
 template< typename Pixel >
