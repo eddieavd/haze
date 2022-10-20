@@ -108,7 +108,7 @@ public:
         {
                 HAZE_ASSERT( x1 <= x2 && y1 < y2 && x2 < width() && y2 < height(), "pixel_field::get_subimage: out of range" );
 
-                image< Pixel > img( x2 - x1, y2 - y1 );
+                image< Pixel > img( x2 - x1 + 1, y2 - y1 + 1 );
 
                 _fill_image( img, x1, y1, x2, y2 );
 

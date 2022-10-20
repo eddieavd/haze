@@ -1,3 +1,4 @@
+/* vim: set ft=cpp: */
 //
 //
 //      HAZElib
@@ -10,6 +11,76 @@
 
 using namespace metal;
 
+
+kernel void transform ( device unsigned char const * src, device unsigned char * dest, device float const * meta, unsigned index [[ thread_position_in_grid ]] )
+{
+        unsigned img_width     = static_cast< unsigned >( meta[ 0 ] );
+        unsigned kernel_size   = static_cast< unsigned >( meta[ 1 ] );
+        float    kernel_weight = meta[ 2 ];
+
+        unsigned half_k_s = kernel_size / 2;
+        unsigned src_width = img_width + kernel_size;
+
+        unsigned row = index / img_width;
+        unsigned col = index % img_width;
+
+        unsigned row_src = row + half_k_s;
+        unsigned col_src = col + half_k_s;
+
+        float avg = 0;
+
+        for( unsigned i = 0; i < kernel_size; ++i )
+        {
+                for( unsigned j = 0; j < kernel_size; ++j )
+                {
+                        avg += src[ ( row_src - half_k_s + i ) * src_width + ( col_src - half_k_s + j ) ] * meta[ i * kernel_size + j + 3 ];
+                }
+        }
+
+        avg /= kernel_weight;
+
+        if( avg < 0 )
+        {
+                avg = -avg;
+        }
+
+        dest[ index ] = static_cast< unsigned char >( avg );
+}
+
+kernel void transform_thicc ( device unsigned long const * src, device unsigned long * dest, device float const * meta, unsigned index [[ thread_position_in_grid ]] )
+{
+        unsigned img_width     = static_cast< unsigned >( meta[ 0 ] );
+        unsigned kernel_size   = static_cast< unsigned >( meta[ 1 ] );
+        float    kernel_weight = meta[ 2 ];
+
+        unsigned half_k_s = kernel_size / 2;
+        unsigned src_width = img_width + kernel_size;
+
+        unsigned row = index / img_width;
+        unsigned col = index % img_width;
+
+        unsigned row_src = row + half_k_s;
+        unsigned col_src = col + half_k_s;
+
+        float avg = 0;
+
+        for( unsigned i = 0; i < kernel_size; ++i )
+        {
+                for( unsigned j = 0; j < kernel_size; ++j )
+                {
+                        avg += src[ ( row_src - half_k_s + i ) * src_width + ( col_src - half_k_s + j ) ] * meta[ i * kernel_size + j + 3 ];
+                }
+        }
+
+        avg /= kernel_weight;
+
+        if( avg < 0 )
+        {
+                avg = -avg;
+        }
+
+        dest[ index ] = static_cast< unsigned >( avg );
+}
 
 kernel void mean_blur_kern ( device unsigned char const * src, device unsigned char * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
 {

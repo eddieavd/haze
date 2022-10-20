@@ -19,6 +19,7 @@
 
 #include "../../image.hpp"
 #include "../../img_manip.hpp"
+#include "../../img_transform.hpp"
 
 #define DEFAULT_LIB_PATH "./lib/ops.metallib" // make this configurable
 
@@ -32,6 +33,9 @@ class metal_ops
 {
 public:
         metal_ops ( MTL::Device * device );
+
+        template< std::size_t Size >
+        image< Pixel > transform_image ( image< Pixel > const & src, kernel< Size, Size > const & kern );
 
         image< Pixel > mean_blur_kern ( image< Pixel > const & src, int const blur_radius );
         image< Pixel > lens_blur_kern ( image< Pixel > const & src, int const blur_radius );
@@ -52,9 +56,14 @@ private:
 
         MTL::Buffer * _create_meta_buffer ( unsigned const width, unsigned const blur_radius = 0 );
 
+        template< std::size_t Size >
+        MTL::Buffer * _create_meta_buffer ( unsigned const width, kernel< Size, Size > const & kern );
+
         void _blocking_id ( std::vector< MTL::Buffer * > const & buffers, std::size_t arr_len, char const * method );
 
         void _read_buffer ( image< Pixel > & img, MTL::Buffer * buffer, std::size_t const width, std::size_t const height, std::size_t const channel );
+
+        void _transform_image ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len );
 
         void _mean_blur_kern ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len );
         void _lens_blur_kern ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len );
@@ -134,6 +143,36 @@ void metal_ops< Pixel >::_blocking_id ( std::vector< MTL::Buffer * > const & buf
 
         command_buffer->commit();
         command_buffer->waitUntilCompleted();
+}
+
+template< typename Pixel >
+template< std::size_t Size >
+image< Pixel > metal_ops< Pixel >::transform_image ( image< Pixel > const & src, kernel< Size, Size > const & kern )
+{
+        using pixel_v_t = typename Pixel::value_type;
+
+        std::size_t kernel_size = Size;
+
+        auto src_width  = src.width();
+        auto src_height = src.height();
+
+        auto dest_width  = src_width  - kernel_size;
+        auto dest_height = src_height - kernel_size;
+
+        image< Pixel > dest_img( dest_width, dest_height );
+
+        for( std::size_t c = 0; c < Pixel::channels; ++c )
+        {
+                MTL::Buffer * src_buffer  = _create_buffer( src, c );
+                MTL::Buffer * dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
+                MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, kern );
+
+                _transform_image( src_buffer, dest_buffer, meta_buffer, dest_width * dest_height );
+
+                _read_buffer( dest_img, dest_buffer, dest_width, dest_height, c );
+        }
+
+        return dest_img;
 }
 
 template< typename Pixel >
@@ -242,6 +281,25 @@ image< Pixel > metal_ops< Pixel >::lens_blur ( pixel_field< Pixel > const & src,
         }
 
         return dest_img;
+}
+
+template< typename Pixel >
+void metal_ops< Pixel >::_transform_image ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len )
+{
+        std::vector< MTL::Buffer * > buffers( { src, dest, metadata } );
+
+        std::string method;
+
+        if constexpr( Pixel::is_thicc )
+        {
+                method = "transform_thicc";
+        }
+        else
+        {
+                method = "transform";
+        }
+
+        this->_blocking_id( buffers, dest_len, method.c_str() );
 }
 
 template< typename Pixel >
@@ -397,6 +455,33 @@ MTL::Buffer * metal_ops< Pixel >::_create_meta_buffer ( unsigned const width, un
 
         meta_ptr[ 0 ] = width;
         meta_ptr[ 1 ] = blur_radius;
+
+        return meta_gpu;
+}
+
+template< typename Pixel >
+template< std::size_t Size >
+MTL::Buffer * metal_ops< Pixel >::_create_meta_buffer ( unsigned const width, kernel< Size, Size > const & kern )
+{
+        unsigned const meta_size = ( 3 + Size * Size ) * sizeof( float );
+
+        MTL::Buffer * meta_gpu = device_->newBuffer( meta_size, MTL::ResourceStorageModeManaged );
+
+        HAZE_ASSERT( meta_gpu != nullptr, "HAZEgpu::metal_ops::_create_meta_buffer: failed to create gpu buffer" );
+
+        float * meta_ptr = static_cast< float * >( meta_gpu->contents() );
+
+        meta_ptr[ 0 ] = static_cast< float >( width );
+        meta_ptr[ 1 ] = static_cast< float >( Size );
+        meta_ptr[ 2 ] = kern.weight;
+
+        for( std::size_t i = 0; i < Size; ++i )
+        {
+                for( std::size_t j = 0; j < Size; ++j )
+                {
+                        meta_ptr[ i * Size + j + 3 ] = kern.vals[ i ][ j ];
+                }
+        }
 
         return meta_gpu;
 }
