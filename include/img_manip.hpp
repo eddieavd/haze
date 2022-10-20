@@ -48,7 +48,7 @@ template< typename Pixel >
 constexpr image< Pixel > pixelize_image_naive ( image< Pixel > const & img, std::size_t const pixel_size );
 
 template< typename Pixel >
-constexpr image< Pixel > blur_image_naive ( image< Pixel > const & img, std::size_t const blur_radius );
+constexpr image< Pixel > mean_blur_naive ( image< Pixel > const & img, std::size_t const blur_radius );
 
 template< typename Pixel >
 constexpr image< Pixel > get_brightest_rect_naive ( image< Pixel > const & img, std::size_t const rect_width, std::size_t const rect_height );
@@ -485,7 +485,7 @@ constexpr image< Pixel > pixelize_image_naive ( image< Pixel > const & img, std:
 }
 
 template< typename Pixel >
-constexpr image< Pixel > blur_image_naive ( image< Pixel > const & img, std::size_t const blur_radius )
+constexpr image< Pixel > mean_blur_naive ( image< Pixel > const & img, std::size_t const blur_radius )
 {
 
 }

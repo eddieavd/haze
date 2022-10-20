@@ -20,12 +20,12 @@
 int main ()
 {
 #ifdef METAL
-        haze::gpu_ops    < haze::thicc_rgb_pixel > gpu;
-        haze::pixel_field< haze::thicc_rgb_pixel > field( IMG_PATH );
+        haze::gpu_ops< haze::bw_pixel > gpu;
+        haze::image  < haze::bw_pixel > img( "IMG_PATH" );
 
-        haze::image blurred = gpu.lens_blur( field, blur_radius );
+        auto edge = gpu.detect_edges( img );
 
-        haze::util::write_to_png( blurred, "gpu_lens.png" );
+        haze::util::write_to_png( edge, "edge.png" );
 #endif
 
 

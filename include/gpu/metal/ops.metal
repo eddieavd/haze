@@ -44,6 +44,8 @@ kernel void transform ( device unsigned char const * src, device unsigned char *
                 avg = -avg;
         }
 
+//        avg += 127;
+
         dest[ index ] = static_cast< unsigned char >( avg );
 }
 
