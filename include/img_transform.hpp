@@ -18,6 +18,10 @@ namespace haze
 template< std::size_t SizeX, std::size_t SizeY >
 struct kernel
 {
+        constexpr static std::size_t size      = SizeX;
+        constexpr static std::size_t sizey     = SizeY;
+        constexpr static bool        is_square = SizeX == SizeY;
+
         float vals[ SizeX ][ SizeY ];
         float weight;
 };

@@ -37,6 +37,8 @@ public:
         template< std::size_t Size >
         image< Pixel > transform_image ( image< Pixel > const & src, kernel< Size, Size > const & kern );
 
+        image< Pixel > detect_edges ( image< Pixel > const & src );
+
         image< Pixel > mean_blur_kern ( image< Pixel > const & src, int const blur_radius );
         image< Pixel > lens_blur_kern ( image< Pixel > const & src, int const blur_radius );
 
@@ -64,6 +66,8 @@ private:
         void _read_buffer ( image< Pixel > & img, MTL::Buffer * buffer, std::size_t const width, std::size_t const height, std::size_t const channel );
 
         void _transform_image ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len );
+
+        void _geometric_combine ( MTL::Buffer * lhs, MTL::Buffer * rhs, MTL::Buffer * dest, std::size_t const dest_len );
 
         void _mean_blur_kern ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len );
         void _lens_blur_kern ( MTL::Buffer * src, MTL::Buffer * dest, MTL::Buffer * metadata, std::size_t const dest_len );
@@ -168,6 +172,40 @@ image< Pixel > metal_ops< Pixel >::transform_image ( image< Pixel > const & src,
                 MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, kern );
 
                 _transform_image( src_buffer, dest_buffer, meta_buffer, dest_width * dest_height );
+
+                _read_buffer( dest_img, dest_buffer, dest_width, dest_height, c );
+        }
+
+        return dest_img;
+}
+
+template< typename Pixel >
+image< Pixel > metal_ops< Pixel >::detect_edges ( image< Pixel > const & src )
+{
+        using pixel_v_t = typename Pixel::value_type;
+
+        auto src_width  = src.width();
+        auto src_height = src.height();
+
+        auto dest_width  = src_width  - sobel_v.size;
+        auto dest_height = src_height - sobel_v.size;
+
+        image< Pixel > dest_img( dest_width, dest_height );
+
+        MTL::Buffer * v_edge_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
+        MTL::Buffer * h_edge_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
+        MTL::Buffer *   dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
+        MTL::Buffer * v_meta_buffer = _create_meta_buffer( dest_width, sobel_v );
+        MTL::Buffer * h_meta_buffer = _create_meta_buffer( dest_width, sobel_h );
+
+        for( std::size_t c = 0; c < Pixel::channels; ++c )
+        {
+                MTL::Buffer * src_buffer = _create_buffer( src, c );
+
+                _transform_image( src_buffer, v_edge_buffer, v_meta_buffer, dest_width * dest_height );
+                _transform_image( src_buffer, h_edge_buffer, h_meta_buffer, dest_width * dest_height );
+
+                _geometric_combine( v_edge_buffer, h_edge_buffer, dest_buffer, dest_width * dest_height );
 
                 _read_buffer( dest_img, dest_buffer, dest_width, dest_height, c );
         }
@@ -297,6 +335,25 @@ void metal_ops< Pixel >::_transform_image ( MTL::Buffer * src, MTL::Buffer * des
         else
         {
                 method = "transform";
+        }
+
+        this->_blocking_id( buffers, dest_len, method.c_str() );
+}
+
+template< typename Pixel >
+void metal_ops< Pixel >::_geometric_combine ( MTL::Buffer * lhs, MTL::Buffer * rhs, MTL::Buffer * dest, std::size_t const dest_len )
+{
+        std::vector< MTL::Buffer * > buffers( { lhs, rhs, dest } );
+
+        std::string method;
+
+        if constexpr( Pixel::is_thicc )
+        {
+                method = "geometric_combine_thicc";
+        }
+        else
+        {
+                method = "geometric_combine";
         }
 
         this->_blocking_id( buffers, dest_len, method.c_str() );

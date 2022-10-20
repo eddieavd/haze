@@ -43,6 +43,14 @@ public:
 #endif
         }
 
+        image< Pixel > detect_edges ( image< Pixel > const & src )
+        {
+#ifdef METAL
+                return mtl_ops.detect_edges( src );
+#else
+#endif
+        }
+
         image< Pixel > mean_blur ( image< Pixel > const & src, unsigned const blur_radius )
         {
 #ifdef METAL

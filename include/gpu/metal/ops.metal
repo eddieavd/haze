@@ -82,6 +82,16 @@ kernel void transform_thicc ( device unsigned long const * src, device unsigned 
         dest[ index ] = static_cast< unsigned >( avg );
 }
 
+kernel void geometric_combine ( device unsigned char const * lhs, device unsigned char const * rhs, device unsigned char * dest, unsigned index [[ thread_position_in_grid ]] )
+{
+        dest[ index ] = static_cast< unsigned char >( sqrt( static_cast< float >( lhs[ index ] * lhs[ index ] + rhs[ index ] * rhs[ index ] ) ) );
+}
+
+kernel void geometric_combine_thicc ( device unsigned long const * lhs, device unsigned long const * rhs, device unsigned long * dest, unsigned index [[ thread_position_in_grid ]] )
+{
+        dest[ index ] = static_cast< unsigned long >( sqrt( static_cast< float >( lhs[ index ] * lhs[ index ] + rhs[ index ] * rhs[ index ] ) ) );
+}
+
 kernel void mean_blur_kern ( device unsigned char const * src, device unsigned char * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
 {
         unsigned img_width   = meta[ 0 ];
