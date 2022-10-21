@@ -1,6 +1,6 @@
 # haze <br/>
 
-**haze** is a C++ image manipulation library utilizing both CPU- and GPU-side processing to provide high performance image transformations,  
+**haze** is a C++ image manipulation library utilizing both CPU- and GPU-side processing to provide high performance image transformations, 
 either through traditional kernel convolution approaches or with specialized implementations using custom data structures.  
   
 ## general <br/>
@@ -16,7 +16,8 @@ while a naive approach would take _O( n * m * blur_radius * blur_radius )_ (or _
 
 ## img_transform <br/>
 
-traditional kernel convolutions n shiet
+The **img_transform** header provides utilities necessary for traditional kernel convolutions including 2D square and rectangular kernels as well as separable 1D kernels. 
+It also exposes several free functions which implement the image transformations CPU-side, but they're only meant to be used as benchmarks against the GPU implementations.
 
 ## perlin noise <br/>
 
