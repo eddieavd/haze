@@ -90,7 +90,7 @@ public:
 
         value_type sum_at ( std::size_t const row, std::size_t const col, std::size_t const channel ) const noexcept
         {
-                return this->fields_.at( channel ).range( 0, 0, row, col );
+                return this->fields_.at( channel ).at( row, col );
         }
 
         image< Pixel > get_image () const
@@ -146,6 +146,20 @@ public:
                 _lens_blur_image( blr, blur_radius );
 
                 return blr;
+        }
+
+        [[ nodiscard ]] constexpr value_type * channel_row_data ( std::size_t const row, std::size_t const channel ) noexcept
+        {
+                HAZE_ASSERT( !empty() && row < height_, "pixel_field::channel_row_data: index out of bounds" );
+
+                return fields_.at( channel ).at( row ).data();
+        }
+
+        [[ nodiscard ]] constexpr value_type const * channel_row_data ( std::size_t const row, std::size_t const channel ) const noexcept
+        {
+                HAZE_ASSERT( !empty() && row < height_, "pixel_field::channel_row_data: index out of bounds" );
+
+                return fields_.at( channel ).at( row ).data();
         }
 
         [[ nodiscard ]] constexpr auto    width () const noexcept { return this->width_   ; }
@@ -301,11 +315,28 @@ void pixel_field< Pixel >::_lens_blur_image ( image< Pixel > & dest, std::size_t
                                 {
                                         for( std::size_t x0 = 0; x0 < current_blur_radius / 2; ++x0 )
                                         {
-                                                auto xx = current_blur_radius / 2 + x0;
-                                                auto yy = current_blur_radius / 2 + y0;
+                                                auto xx = current_blur_radius / 2 - x0;
+                                                auto yy = current_blur_radius / 2 - y0;
 
+                                                if( xx * xx + yy * yy <= ( current_blur_radius / 2 ) * ( current_blur_radius / 2 ) )
+//                                                if( xx + yy >= current_blur_radius / 2 )
+                                                {
+                                                        avg -= this->fields_.at( c ).range( i + y0 - current_blur_radius / 2, j      - current_blur_radius / 2,
+                                                                                            i + y0 - current_blur_radius / 2, j + x0 - current_blur_radius / 2 );
+                                                        avg -= this->fields_.at( c ).range( i + y0 - current_blur_radius / 2, j - x0 + current_blur_radius / 2,
+                                                                                            i + y0 - current_blur_radius / 2, j      + current_blur_radius / 2 );
+                                                        avg -= this->fields_.at( c ).range( i - y0 + current_blur_radius / 2, j      - current_blur_radius / 2,
+                                                                                            i - y0 + current_blur_radius / 2, j + x0 - current_blur_radius / 2 );
+                                                        avg -= this->fields_.at( c ).range( i - y0 + current_blur_radius / 2, j - x0 + current_blur_radius / 2,
+                                                                                            i - y0 + current_blur_radius / 2, j      + current_blur_radius / 2 );
+
+                                                        excl_cnt += 4 * ( x0 + 1 );
+
+                                                        break;
+                                                }
+
+                                                /*
                                                 if( xx * xx + yy * yy > current_blur_radius * current_blur_radius )
-//                                              if( x0 + y0 < current_blur_radius / 2 )
                                                 {
                                                         avg -= this->fields_.at( c ).element_at( i + y0 - current_blur_radius / 2, j + x0 - current_blur_radius / 2 );
                                                         avg -= this->fields_.at( c ).element_at( i + y0 - current_blur_radius / 2, j + current_blur_radius / 2 - x0 );
@@ -318,6 +349,7 @@ void pixel_field< Pixel >::_lens_blur_image ( image< Pixel > & dest, std::size_t
                                                 {
                                                         break;
                                                 }
+                                                */
                                         }
                                 }
 

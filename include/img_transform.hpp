@@ -7,6 +7,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 
 #include "image.hpp"
 
@@ -36,6 +37,29 @@ struct separable_kernel
         float weight_h;
 };
 
+template< typename T >
+struct dynamic_mean_blur
+{
+        using value_type = float;
+
+        dynamic_mean_blur ( std::size_t const size ) : size_( size )
+        {
+                for( std::size_t i = 0; i < size; ++i )
+                {
+                        vals.emplace_back();
+
+                        for( std::size_t j = 0; j < size; ++j )
+                        {
+                                vals[ i ].emplace_back( 1 );
+                        }
+                }
+        }
+
+        std::size_t size_;
+        float       weight;
+        std::vector< std::vector< float > > vals;
+};
+
 template< std::size_t Low, std::size_t High >
 struct kernel_group
 {
@@ -46,10 +70,12 @@ struct kernel_group
 
            how tho?
 
+           without nontype template params idiot
+           you're locking stuff down unnecessarily
         */
 };
 
-//constexpr static kernel< 1, 1 > identity_1{ { { 1 } }, 1 };
+constexpr static kernel< 1, 1 > identity_1{ { { 1 } }, 1 };
 
 constexpr static kernel< 3, 3 > identity_3{ { { 0, 0, 0 },
                                               { 0, 1, 0 },
@@ -77,15 +103,12 @@ constexpr static kernel< 3, 3 > gauss_3{ { { 1, 2, 1 },
                                            { 2, 4, 2 },
                                            { 1, 2, 1 } }, 16 };
 
-constexpr static kernel< 5, 5 > gauss_5{ { {  1,  4,  6,  4,  1 },
-                                           {  4, 16, 24, 16,  4 },
-                                           {  6, 24, 36, 24,  6 },
-                                           {  4, 16, 24, 16,  4 },
-                                           {  1,  4,  6,  4,  1 } }, 25 };
-
 
 template< typename Pixel, std::size_t KernSize >
 constexpr image< Pixel > transform_image ( image< Pixel > const & src, kernel< KernSize, KernSize > const & kern );
+
+template< typename Pixel >
+constexpr image< Pixel > mean_blur_image ( image< Pixel > const & src, dynamic_mean_blur< Pixel > const & blur );
 
 
 namespace detail
@@ -120,6 +143,34 @@ constexpr void _transform_image_impl ( image< Pixel > const & src, image< Pixel 
         }
 }
 
+template< typename Pixel >
+constexpr void _mean_blur_image_impl ( image< Pixel > const & src, image< Pixel > & dest, dynamic_mean_blur< Pixel > const & blur )
+{
+        for( std::size_t i = blur.size_ / 2; i < src.height() - blur.size_ / 2 - 1; ++i )
+        {
+                for( std::size_t j = blur.size_ / 2; j < src.width() - blur.size_ / 2 - 1; ++j )
+                {
+                        for( std::size_t c = 0; c < Pixel::channels; ++c )
+                        {
+                                double val = 0;
+
+                                for( std::size_t ki = 0; ki < blur.size_; ++ki )
+                                {
+                                        for( std::size_t kj = 0; kj < blur.size_; ++kj )
+                                        {
+                                                val += src.at( i + ki - blur.size_ / 2, j + kj - blur.size_ / 2  ).values[ c ] * blur.vals[ ki ][ kj ];
+                                        }
+                                }
+
+                                val /= blur.weight;
+                                val = std::abs( val );
+
+                                dest.at( i - blur.size_ / 2, j - blur.size_ / 2 ).values[ c ] = static_cast< unsigned char >( val );
+                        }
+                }
+        }
+}
+
 
 } // namespace detail
 
@@ -130,6 +181,16 @@ constexpr image< Pixel > transform_image ( image< Pixel > const & src, kernel< K
         image< Pixel > dest( src.width() - KernSize, src.height() - KernSize );
 
         detail::_transform_image_impl( src, dest, kern );
+
+        return dest;
+}
+
+template< typename Pixel >
+constexpr image< Pixel > mean_blur_image ( image< Pixel > const & src, dynamic_mean_blur< Pixel > const & blur )
+{
+        image< Pixel > dest( src.width() - blur.size_, src.height() - blur.size_ );
+
+        detail::_mean_blur_image_impl( src, dest, blur );
 
         return dest;
 }

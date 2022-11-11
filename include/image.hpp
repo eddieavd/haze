@@ -38,6 +38,20 @@ struct pixel
                 }
                 return true;
         }
+
+        constexpr float luminance () const noexcept
+        {
+                if constexpr( channels == 1 )
+                {
+                        return static_cast< float >( values[ 0 ] );
+                }
+                else
+                {
+                        return 0.2126 * values[ 0 ] + 0.7152 * values[ 1 ] + 0.0722 * values[ 2 ];
+
+                                        //      https://stackoverflow.com/questions/596216/formula-to-determine-perceived-brightness-of-rgb-color
+                }
+        }
 };
 
 struct    bw_pixel : pixel< std::uint8_t, 1 > {};
