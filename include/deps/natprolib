@@ -6,4 +6,4 @@
 
 #pragma once
 
-#include "npl_dev/natprolib.h"
+#include "npl/natprolib.h"

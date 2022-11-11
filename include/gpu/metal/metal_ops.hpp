@@ -488,13 +488,12 @@ MTL::Buffer * metal_ops< Pixel >::_create_buffer ( pixel_field< Pixel > const & 
 
         field_v_t * src_ptr = static_cast< field_v_t * >( src_gpu->contents() );
 
-        for( std::size_t i = 0; i < height; ++i )
-        {
-                for( std::size_t j = 0; j < width; ++j )
-                {
-                        src_ptr[ i * width + j ] = src.sum_at( i, j, channel );
-                }
-        }
+//        for( std::size_t i = 0; i < height; ++i )
+//        {
+//                std::memcpy( src_ptr + ( i * width ), src.channel_row_data( i, channel ), width * sizeof( field_v_t ) );
+//        }
+
+        std::memcpy( src_ptr, src.channel_row_data( 0, channel ), width * height * sizeof( field_v_t ) );
 
         return src_gpu;
 }

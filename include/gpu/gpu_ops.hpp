@@ -77,7 +77,7 @@ public:
         {
 #ifndef GPU
 #elif defined METAL
-                return mtl_ops.lens_blur( src, blur_radius );
+                return mtl_ops.lens_blur_kern( src, blur_radius );
 #else
 #endif
         }

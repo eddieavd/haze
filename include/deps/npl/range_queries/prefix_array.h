@@ -425,12 +425,12 @@ public:
 	auto   operator-  ( prefix_array< T, Allocator > const & _rhs_ ) const         ;
 	auto & operator-= ( prefix_array< T, Allocator > const & _rhs_ )       noexcept;
 
-	const_reference at ( size_type _n_ ) const;
+	__attribute__(( always_inline )) const_reference at ( size_type _n_ ) const;
 
-	value_type element_at ( size_type _n_ ) const;
+	__attribute__(( always_inline )) __attribute__(( flatten )) value_type element_at ( size_type _n_ ) const;
 
-	value_type range (                              ) const;
-	value_type range ( size_type _x_, size_type _y_ ) const;
+	__attribute__(( always_inline )) value_type range (                              ) const;
+	__attribute__(( always_inline )) value_type range ( size_type _x_, size_type _y_ ) const;
 
 	// 2D overloads
         template< typename U = _self >
