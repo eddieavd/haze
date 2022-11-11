@@ -367,95 +367,86 @@ kernel void lens_blur_field ( device unsigned long const * src, device unsigned 
 
         for( unsigned y = 0; y < half_blur_r; ++y )
         {
-                for( unsigned x = 0; x < half_blur_r; ++x )
+                unsigned yy = half_blur_r - y;
+                unsigned xx = sqrt( static_cast< float >( half_blur_r * half_blur_r - yy * yy ) );
+
+                unsigned x = half_blur_r - xx;
+
+                if( x1 + x == 0 && y1 + y == 0 )
                 {
-                        unsigned xx = half_blur_r - x;
-                        unsigned yy = half_blur_r - y;
+                        avg -= src[ ( y1 + y ) * src_width + ( x1 + x ) ];
 
-                        if( xx * xx + yy * yy <= half_blur_r * half_blur_r )
-                        {
-                                if( x1 + x == 0 && y1 + y == 0 )
-                                {
-                                        avg -= src[ ( y1 + y ) * src_width + ( x1 + x ) ];
+                        avg -= src[ ( y1 + y ) * src_width + ( x2     ) ] -
+                               src[ ( y1 + y ) * src_width + ( x2 - 1 ) ];
 
-                                        avg -= src[ ( y1 + y ) * src_width + ( x2 - x     ) ] -
-                                               src[ ( y1 + y ) * src_width + ( x2 - x - 1 ) ];
+                        avg -= src[ ( y2 - y     ) * src_width + ( x1 + x ) ] -
+                               src[ ( y2 - y - 1 ) * src_width + ( x1 + x ) ];
 
-                                        avg -= src[ ( y2 - y     ) * src_width + ( x1 + x ) ] -
-                                               src[ ( y2 - y - 1 ) * src_width + ( x1 + x ) ];
-
-                                        avg -= src[ ( y2 - y     ) * src_width + ( x2 - x     ) ] -
-                                               src[ ( y2 - y - 1 ) * src_width + ( x2 - x     ) ] -
-                                               src[ ( y2 - y     ) * src_width + ( x2 - x - 1 ) ] +
-                                               src[ ( y2 - y - 1 ) * src_width + ( x2 - x - 1 ) ];
-
-                                }
-                                else if( x1 + x == 0 )
-                                {
-                                        avg -= src[ ( y1 + y     ) * src_width + ( x1 + x ) ] -
-                                               src[ ( y1 + y - 1 ) * src_width + ( x1 + x ) ];
-
-                                        avg -= src[ ( y1 + y     ) * src_width + ( x2     ) ] -
-                                               src[ ( y1 + y - 1 ) * src_width + ( x2     ) ] -
-                                               src[ ( y1 + y     ) * src_width + ( x2 - x ) ] +
-                                               src[ ( y1 + y - 1 ) * src_width + ( x2 - x ) ];
-
-                                        avg -= src[ ( y2 - y     ) * src_width + ( x1 + x ) ] -
-                                               src[ ( y2 - y - 1 ) * src_width + ( x1 + x ) ];
-
-                                        avg -= src[ ( y2 - y     ) * src_width + ( x2     ) ] -
-                                               src[ ( y2 - y - 1 ) * src_width + ( x2     ) ] -
-                                               src[ ( y2 - y     ) * src_width + ( x2 - x ) ] +
-                                               src[ ( y2 - y - 1 ) * src_width + ( x2 - x ) ];
-
-                                }
-                                else if( y1 + y == 0 )
-                                {
-                                        avg -= src[ ( y1 + y ) * src_width + ( x1 + x ) ] -
-                                               src[ ( y1 + y ) * src_width + ( x1     ) ];
-
-                                        avg -= src[ ( y1 + y ) * src_width + ( x2     ) ] -
-                                               src[ ( y1 + y ) * src_width + ( x2 - x ) ];
-
-                                        avg -= src[ ( y2 - y     ) * src_width + ( x1 + x ) ] -
-                                               src[ ( y2 - y - 1 ) * src_width + ( x1 + x ) ] -
-                                               src[ ( y2 - y     ) * src_width + ( x1     ) ] +
-                                               src[ ( y2 - y - 1 ) * src_width + ( x1     ) ];
-
-                                        avg -= src[ ( y2 - y     ) * src_width + ( x2     ) ] -
-                                               src[ ( y2 - y - 1 ) * src_width + ( x2     ) ] -
-                                               src[ ( y2 - y     ) * src_width + ( x2 - x ) ] +
-                                               src[ ( y2 - y - 1 ) * src_width + ( x2 - x ) ];
-                                }
-                                else
-                                {
-                                        avg -= src[ ( y1 + y     ) * src_width + ( x1 + x ) ] -
-                                               src[ ( y1 + y - 1 ) * src_width + ( x1 + x ) ] -
-                                               src[ ( y1 + y     ) * src_width + ( x1     ) ] +
-                                               src[ ( y1 + y - 1 ) * src_width + ( x1     ) ];
-
-                                        avg -= src[ ( y1 + y     ) * src_width + ( x2     ) ] -
-                                               src[ ( y1 + y - 1 ) * src_width + ( x2     ) ] -
-                                               src[ ( y1 + y     ) * src_width + ( x2 - x ) ] +
-                                               src[ ( y1 + y - 1 ) * src_width + ( x2 - x ) ];
-
-                                        avg -= src[ ( y2 - y     ) * src_width + ( x1 + x ) ] -
-                                               src[ ( y2 - y - 1 ) * src_width + ( x1 + x ) ] -
-                                               src[ ( y2 - y     ) * src_width + ( x1     ) ] +
-                                               src[ ( y2 - y - 1 ) * src_width + ( x1     ) ];
-
-                                        avg -= src[ ( y2 - y     ) * src_width + ( x2     ) ] -
-                                               src[ ( y2 - y - 1 ) * src_width + ( x2     ) ] -
-                                               src[ ( y2 - y     ) * src_width + ( x2 - x ) ] +
-                                               src[ ( y2 - y - 1 ) * src_width + ( x2 - x ) ];
-
-                                }
-
-                                excl_cnt += ( x + 1 ) * 4;
-
-                                break;
-                        }
+                        avg -= src[ ( y2 - y     ) * src_width + ( x2     ) ] -
+                               src[ ( y2 - y - 1 ) * src_width + ( x2     ) ] -
+                               src[ ( y2 - y     ) * src_width + ( x2 - 1 ) ] +
+                               src[ ( y2 - y - 1 ) * src_width + ( x2 - 1 ) ];
                 }
+                else if( x1 + x == 0 )
+                {
+                        avg -= src[ ( y1 + y     ) * src_width + ( x1 + x ) ] -
+                               src[ ( y1 + y - 1 ) * src_width + ( x1 + x ) ];
+
+                        avg -= src[ ( y1 + y     ) * src_width + ( x2     ) ] -
+                               src[ ( y1 + y - 1 ) * src_width + ( x2     ) ] -
+                               src[ ( y1 + y     ) * src_width + ( x2 - 1 ) ] +
+                               src[ ( y1 + y - 1 ) * src_width + ( x2 - 1 ) ];
+
+                        avg -= src[ ( y2 - y     ) * src_width + ( x1 + x ) ] -
+                               src[ ( y2 - y - 1 ) * src_width + ( x1 + x ) ];
+
+                        avg -= src[ ( y2 - y     ) * src_width + ( x2     ) ] -
+                               src[ ( y2 - y - 1 ) * src_width + ( x2     ) ] -
+                               src[ ( y2 - y     ) * src_width + ( x2 - 1 ) ] +
+                               src[ ( y2 - y - 1 ) * src_width + ( x2 - 1 ) ];
+                }
+                else if( y1 + y == 0 )
+                {
+                        avg -= src[ ( y1 + y ) * src_width + ( x1 + x ) ] -
+                               src[ ( y1 + y ) * src_width + ( x1     ) ];
+
+                        avg -= src[ ( y1 + y ) * src_width + ( x2     ) ] -
+                               src[ ( y1 + y ) * src_width + ( x2 - x ) ];
+
+                        avg -= src[ ( y2 - y     ) * src_width + ( x1 + x ) ] -
+                               src[ ( y2 - y - 1 ) * src_width + ( x1 + x ) ] -
+                               src[ ( y2 - y     ) * src_width + ( x1     ) ] +
+                               src[ ( y2 - y - 1 ) * src_width + ( x1     ) ];
+
+                        avg -= src[ ( y2 - y     ) * src_width + ( x2     ) ] -
+                               src[ ( y2 - y - 1 ) * src_width + ( x2     ) ] -
+                               src[ ( y2 - y     ) * src_width + ( x2 - x ) ] +
+                               src[ ( y2 - y - 1 ) * src_width + ( x2 - x ) ];
+                }
+                else
+                {
+                        avg -= src[ ( y1 + y     ) * src_width + ( x1 + x ) ] -
+                               src[ ( y1 + y - 1 ) * src_width + ( x1 + x ) ] -
+                               src[ ( y1 + y     ) * src_width + ( x1     ) ] +
+                               src[ ( y1 + y - 1 ) * src_width + ( x1     ) ];
+
+                        avg -= src[ ( y1 + y     ) * src_width + ( x2     ) ] -
+                               src[ ( y1 + y - 1 ) * src_width + ( x2     ) ] -
+                               src[ ( y1 + y     ) * src_width + ( x2 - x ) ] +
+                               src[ ( y1 + y - 1 ) * src_width + ( x2 - x ) ];
+
+                        avg -= src[ ( y2 - y     ) * src_width + ( x1 + x ) ] -
+                               src[ ( y2 - y - 1 ) * src_width + ( x1 + x ) ] -
+                               src[ ( y2 - y     ) * src_width + ( x1     ) ] +
+                               src[ ( y2 - y - 1 ) * src_width + ( x1     ) ];
+
+                        avg -= src[ ( y2 - y     ) * src_width + ( x2     ) ] -
+                               src[ ( y2 - y - 1 ) * src_width + ( x2     ) ] -
+                               src[ ( y2 - y     ) * src_width + ( x2 - x ) ] +
+                               src[ ( y2 - y - 1 ) * src_width + ( x2 - x ) ];
+                }
+
+                excl_cnt += ( x + 1 ) * 4;
         }
 
         avg /= ( blur_radius * blur_radius ) - excl_cnt;

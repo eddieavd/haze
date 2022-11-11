@@ -319,7 +319,6 @@ void pixel_field< Pixel >::_lens_blur_image ( image< Pixel > & dest, std::size_t
                                                 auto yy = current_blur_radius / 2 - y0;
 
                                                 if( xx * xx + yy * yy <= ( current_blur_radius / 2 ) * ( current_blur_radius / 2 ) )
-//                                                if( xx + yy >= current_blur_radius / 2 )
                                                 {
                                                         avg -= this->fields_.at( c ).range( i + y0 - current_blur_radius / 2, j      - current_blur_radius / 2,
                                                                                             i + y0 - current_blur_radius / 2, j + x0 - current_blur_radius / 2 );
@@ -334,22 +333,6 @@ void pixel_field< Pixel >::_lens_blur_image ( image< Pixel > & dest, std::size_t
 
                                                         break;
                                                 }
-
-                                                /*
-                                                if( xx * xx + yy * yy > current_blur_radius * current_blur_radius )
-                                                {
-                                                        avg -= this->fields_.at( c ).element_at( i + y0 - current_blur_radius / 2, j + x0 - current_blur_radius / 2 );
-                                                        avg -= this->fields_.at( c ).element_at( i + y0 - current_blur_radius / 2, j + current_blur_radius / 2 - x0 );
-                                                        avg -= this->fields_.at( c ).element_at( i + current_blur_radius / 2 - y0, j + x0 - current_blur_radius / 2 );
-                                                        avg -= this->fields_.at( c ).element_at( i + current_blur_radius / 2 - y0, j + current_blur_radius / 2 - x0 );
-
-                                                        excl_cnt += 4;
-                                                }
-                                                else
-                                                {
-                                                        break;
-                                                }
-                                                */
                                         }
                                 }
 

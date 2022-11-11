@@ -165,11 +165,12 @@ image< Pixel > metal_ops< Pixel >::transform_image ( image< Pixel > const & src,
 
         image< Pixel > dest_img( dest_width, dest_height );
 
+        MTL::Buffer * dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
+        MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, kern );
+
         for( std::size_t c = 0; c < Pixel::channels; ++c )
         {
-                MTL::Buffer * src_buffer  = _create_buffer( src, c );
-                MTL::Buffer * dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
-                MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, kern );
+                MTL::Buffer * src_buffer = _create_buffer( src, c );
 
                 _transform_image( src_buffer, dest_buffer, meta_buffer, dest_width * dest_height );
 
@@ -226,11 +227,12 @@ image< Pixel > metal_ops< Pixel >::mean_blur_kern ( image< Pixel > const & src, 
 
         image< Pixel > dest_img( dest_width, dest_height );
 
+        MTL::Buffer * dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
+        MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, blur_radius );
+
         for( std::size_t c = 0; c < Pixel::channels; ++c )
         {
-                MTL::Buffer * src_buffer  = _create_buffer( src, c );
-                MTL::Buffer * dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
-                MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, blur_radius );
+                MTL::Buffer * src_buffer = _create_buffer( src, c );
 
                 _mean_blur_kern( src_buffer, dest_buffer, meta_buffer, dest_width * dest_height );
 
@@ -253,11 +255,12 @@ image< Pixel > metal_ops< Pixel >::lens_blur_kern ( image< Pixel > const & src, 
 
         image< Pixel > dest_img( dest_width, dest_height );
 
+        MTL::Buffer * dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
+        MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, blur_radius );
+
         for( std::size_t c = 0; c < Pixel::channels; ++c )
         {
-                MTL::Buffer * src_buffer  = _create_buffer( src, c );
-                MTL::Buffer * dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
-                MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, blur_radius );
+                MTL::Buffer * src_buffer = _create_buffer( src, c );
 
                 _lens_blur_kern( src_buffer, dest_buffer, meta_buffer, dest_width * dest_height );
 
@@ -280,11 +283,12 @@ image< Pixel > metal_ops< Pixel >::mean_blur ( pixel_field< Pixel > const & src,
 
         image< Pixel > dest_img( dest_width, dest_height );
 
+        MTL::Buffer * dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
+        MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, blur_radius );
+
         for( std::size_t c = 0; c < Pixel::channels; ++c )
         {
-                MTL::Buffer * src_buffer  = _create_buffer( src, c );
-                MTL::Buffer * dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
-                MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, blur_radius );
+                MTL::Buffer * src_buffer = _create_buffer( src, c );
 
                 _mean_blur( src_buffer, dest_buffer, meta_buffer, dest_width * dest_height );
 
@@ -307,11 +311,12 @@ image< Pixel > metal_ops< Pixel >::lens_blur ( pixel_field< Pixel > const & src,
 
         image< Pixel > dest_img( dest_width, dest_height );
 
+        MTL::Buffer * dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
+        MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, blur_radius );
+
         for( std::size_t c = 0; c < Pixel::channels; ++c )
         {
-                MTL::Buffer * src_buffer  = _create_buffer( src, c );
-                MTL::Buffer * dest_buffer = _create_empty_buffer( dest_width * dest_height * sizeof( pixel_v_t ) );
-                MTL::Buffer * meta_buffer = _create_meta_buffer( dest_width, blur_radius );
+                MTL::Buffer * src_buffer = _create_buffer( src, c );
 
                 _lens_blur( src_buffer, dest_buffer, meta_buffer, dest_width * dest_height );
 
@@ -488,12 +493,10 @@ MTL::Buffer * metal_ops< Pixel >::_create_buffer ( pixel_field< Pixel > const & 
 
         field_v_t * src_ptr = static_cast< field_v_t * >( src_gpu->contents() );
 
-//        for( std::size_t i = 0; i < height; ++i )
-//        {
-//                std::memcpy( src_ptr + ( i * width ), src.channel_row_data( i, channel ), width * sizeof( field_v_t ) );
-//        }
-
-        std::memcpy( src_ptr, src.channel_row_data( 0, channel ), width * height * sizeof( field_v_t ) );
+        for( std::size_t i = 0; i < height; ++i )
+        {
+                std::memcpy( src_ptr + ( i * width ), src.channel_row_data( i, channel ), width * sizeof( field_v_t ) );
+        }
 
         return src_gpu;
 }
