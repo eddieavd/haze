@@ -10,7 +10,7 @@
 
 #include "../include/HAZElib.hpp"
 
-#define IMG_PATH "lake.jpeg"
+#define IMG_PATH "test.jpeg"
 
 
 namespace haze_bench
@@ -26,35 +26,37 @@ auto pb
         }
 };
 
-/*
-template< typename Pixel >
-static void bm_segtree_img ( benchmark::State & state )
+template< typename Pixel, std::size_t KernSize, haze::kernel< KernSize, KernSize > kernel >
+static void bm_transform_image_cpu ( benchmark::State & state )
 {
-        srand( time( nullptr ) );
-
         haze::image< Pixel > img( IMG_PATH );
 
         for( auto _ : state )
         {
-                npl::rq::segment_tree< haze::image< Pixel >, pb< Pixel > > segtree;
-
-                for( long long i = 0; i < state.range( 0 ); ++i )
-                {
-                        std::size_t x1 = rand() %  img.width() / 2;
-                        std::size_t x2 = rand() %  img.width() / 2 + img.width() / 2;
-                        std::size_t y1 = rand() % img.height() / 2;
-                        std::size_t y2 = rand() % img.height() / 2 + img.height() / 2;
-
-                        segtree.emplace_back( img.get_subimage( x1, y1, x2, y2 ) );
-                }
-
-                auto res = segtree.range();
+                auto processed = haze::transform_image( img, kernel );
 
                 benchmark::ClobberMemory();
-                benchmark::DoNotOptimize( res );
+                benchmark::DoNotOptimize( processed );
         }
 }
-*/
+
+template< typename Pixel, std::size_t KernSize, haze::separable_kernel< KernSize > kernel >
+static void bm_transform_image_sep_cpu ( benchmark::State & state )
+{
+        haze::image< Pixel > img( IMG_PATH );
+
+        for( auto _ : state )
+        {
+                auto processed = haze::transform_image( img, kernel );
+
+                benchmark::ClobberMemory();
+                benchmark::DoNotOptimize( processed );
+        }
+
+        state.counters[    "iwidth" ] = img.width();
+        state.counters[   "iheight" ] = img.height();
+        state.counters[ "total_pix" ] = img.width() * img.height();
+}
 
 template< typename Pixel >
 static void bm_mean_blur_field ( benchmark::State & state )
@@ -106,6 +108,10 @@ static void bm_mean_blur_kern ( benchmark::State & state )
                 benchmark::ClobberMemory();
                 benchmark::DoNotOptimize( blurred );
         }
+
+        state.counters[    "iwidth" ] = img.width();
+        state.counters[   "iheight" ] = img.height();
+        state.counters[ "total_pix" ] = img.width() * img.height();
 }
 
 template< typename Pixel >
@@ -126,6 +132,26 @@ static void bm_mean_blur_kern_metal ( benchmark::State & state )
         state.counters[    "iwidth" ] = img.width();
         state.counters[   "iheight" ] = img.height();
         state.counters[ "total_pix" ] = img.width() * img.height();
+}
+
+template< typename Pixel >
+static void bm_mean_blur_sprbl ( benchmark::State & state )
+{
+        haze::image< Pixel > img( IMG_PATH );
+
+        for( auto _ : state )
+        {
+                auto blurred = haze::mean_blur_image_sep( img, { static_cast< std::size_t >( state.range( 0 ) ) } );
+
+                benchmark::ClobberMemory();
+                benchmark::DoNotOptimize( blurred );
+        }
+}
+
+template< typename Pixel >
+static void bm_mean_blur_sprbl_metal ( [[ maybe_unused ]] benchmark::State & state )
+{
+
 }
 
 template< typename Pixel >
@@ -156,6 +182,26 @@ static void bm_lens_blur_field_metal ( benchmark::State & state )
         for( auto _ : state )
         {
                 auto blurred = gpu.lens_blur( field, state.range( 0 ) );
+
+                benchmark::ClobberMemory();
+                benchmark::DoNotOptimize( blurred );
+        }
+
+        state.counters[    "iwidth" ] = field.width();
+        state.counters[   "iheight" ] = field.height();
+        state.counters[ "total_pix" ] = field.width() * field.height();
+}
+
+template< typename Pixel >
+static void bm_lens_blur_field_direct_metal ( benchmark::State & state )
+{
+        haze::gpu_ops< Pixel > gpu;
+
+        haze::pixel_field< Pixel > field( IMG_PATH );
+
+        for( auto _ : state )
+        {
+                auto blurred = gpu.lens_blur_direct( field, state.range( 0 ) );
 
                 benchmark::ClobberMemory();
                 benchmark::DoNotOptimize( blurred );
