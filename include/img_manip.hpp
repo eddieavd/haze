@@ -148,6 +148,17 @@ public:
                 return blr;
         }
 
+        image< Pixel > get_fast_lens_blurred_image ( std::size_t const blur_radius ) const
+        {
+                HAZE_ASSERT( !empty(), "pixel_field::get_fast_lens_blurred_image: called on empty pixel field" );
+
+                image< Pixel > blr( width_, height_ );
+
+                _fast_lens_blur_image( blr, blur_radius );
+
+                return blr;
+        }
+
         [[ nodiscard ]] constexpr value_type * channel_row_data ( std::size_t const row, std::size_t const channel ) noexcept
         {
                 HAZE_ASSERT( !empty() && row < height_, "pixel_field::channel_row_data: index out of bounds" );
@@ -189,6 +200,11 @@ private:
 
         void _lens_blur_image ( image< Pixel > & dest, std::size_t const blur_radius ) const noexcept;
         void _lens_blur_image ( image< Pixel > & dest, std::size_t const blur_radius,
+                                std::size_t const x1, std::size_t const y1,
+                                std::size_t const x2, std::size_t const y2 ) const noexcept;
+
+        void _fast_lens_blur_image ( image< Pixel > & dest, std::size_t const blur_radius ) const noexcept;
+        void _fast_lens_blur_image ( image< Pixel > & dest, std::size_t const blur_radius,
                                 std::size_t const x1, std::size_t const y1,
                                 std::size_t const x2, std::size_t const y2 ) const noexcept;
 };
@@ -337,6 +353,71 @@ void pixel_field< Pixel >::_lens_blur_image ( image< Pixel > & dest, std::size_t
                                 }
 
                                 avg /= current_blur_radius * current_blur_radius - excl_cnt;
+
+                                if( avg > 255 )
+                                {
+                                        avg = 255;
+                                }
+
+                                dest.at( i - y1, j - x1 ).values[ c ] = static_cast< pixel_v_t >( avg );
+                        }
+                }
+        }
+}
+
+template< typename Pixel >
+void pixel_field< Pixel >::_fast_lens_blur_image ( image< Pixel > & dest, std::size_t const blur_radius ) const noexcept
+{
+        _fast_lens_blur_image( dest, blur_radius, 0, 0, this->width_ - 1, this->height_ - 1 );
+}
+
+template< typename Pixel >
+void pixel_field< Pixel >::_fast_lens_blur_image ( image< Pixel > & dest, std::size_t const blur_radius, std::size_t const x1, std::size_t const y1, std::size_t const x2, std::size_t const y2 ) const noexcept
+{
+        std::size_t current_blur_radius = blur_radius;
+
+        for( std::size_t i = y1; i <= y2; ++i )
+        {
+                for( std::size_t j = x1; j <= x2; ++j )
+                {
+                        current_blur_radius = std::min( { blur_radius, i, j, y2 - i, x2 - j } );
+                        auto half_radius    = current_blur_radius / 2;
+
+                        for( std::size_t c = 0; c < Pixel::channels; ++c )
+                        {
+                                if( current_blur_radius < 2 )
+                                {
+                                        continue;
+                                }
+
+                                auto y1_quart = half_radius / 2;
+                                auto x1_quart = std::sqrt( static_cast< float >( half_radius * half_radius - y1_quart * y1_quart ) );
+
+//                                auto y2_quart = current_blur_radius - y1_quart;
+//                                auto x2_quart = current_blur_radius - x1_quart;
+
+                                auto avg = this->fields_.at( c ).range( i - half_radius + y1_quart, j - half_radius + x1_quart,
+                                                                        i + half_radius - y1_quart, j + half_radius - x1_quart );
+
+                                int incl_cnt = 0;
+
+                                for( std::size_t row = half_radius / 2 - 1; row >= 0; --row )
+                                {
+                                        auto row_coord = half_radius - row;
+                                        auto col_coord = std::sqrt( static_cast< float >( half_radius * half_radius - row_coord * row_coord ) );
+
+                                        auto col = half_radius - col_coord;
+
+                                        avg += this->fields_.at( c ).range( i + row - half_radius, j + col - half_radius,
+                                                                            i + row - half_radius, j + half_radius - col );
+
+                                        avg += this->fields_.at( c ).range( i + half_radius - row, j + col - half_radius,
+                                                                            i + half_radius - row, j + half_radius - col );
+
+                                        incl_cnt += 2 * current_blur_radius - ( 2 * col );
+                                }
+
+                                avg /= half_radius * half_radius + incl_cnt;
 
                                 if( avg > 255 )
                                 {

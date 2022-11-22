@@ -60,20 +60,6 @@ struct dynamic_mean_blur
         std::vector< std::vector< float > > vals;
 };
 
-template< std::size_t Low, std::size_t High >
-struct kernel_group
-{
-        /*
-
-           list of kernels of same "type" (eg. gaussian blurs)
-           with sizes ranging from Low to High
-
-           how tho?
-
-           without nontype template params idiot
-           you're locking stuff down unnecessarily
-        */
-};
 
 constexpr static kernel< 1, 1 > identity_1{ { { 1 } }, 1 };
 
@@ -83,11 +69,11 @@ constexpr static kernel< 3, 3 > identity_3{ { { 0, 0, 0 },
 
 constexpr static kernel< 3, 3 > sobel_h{ { { -1, -2, -1 },
                                            {  0,  0,  0 },
-                                           {  1,  2,  1 } }, 9 / 2.55 };
+                                           {  1,  2,  1 } }, 4 };
 
 constexpr static kernel< 3, 3 > sobel_v{ { { -1,  0,  1 },
                                            { -2,  0,  2 },
-                                           { -1,  0,  1 } }, 9 / 2.55 };
+                                           { -1,  0,  1 } }, 4 };
 
 constexpr static kernel< 3, 3 > mean_blur_3{ { { 1, 1, 1 },
                                                { 1, 1, 1 },
@@ -103,12 +89,28 @@ constexpr static kernel< 3, 3 > gauss_3{ { { 1, 2, 1 },
                                            { 2, 4, 2 },
                                            { 1, 2, 1 } }, 16 };
 
+constexpr static kernel< 3, 3 > sharpen{ { {  0, -1,  0 },
+                                           { -1,  5, -1 },
+                                           {  0, -1,  0 } }, 1 };
+
+constexpr static separable_kernel< 3 > sep_mean_blur_3{ { 1, 1, 1 },
+                                                        { 1, 1, 1 }, 3, 3 };
+
+constexpr static separable_kernel< 5 > sep_mean_blur_5{ { 1, 1, 1, 1, 1 },
+                                                        { 1, 1, 1, 1, 1 }, 5, 5 };
+
 
 template< typename Pixel, std::size_t KernSize >
 constexpr image< Pixel > transform_image ( image< Pixel > const & src, kernel< KernSize, KernSize > const & kern );
 
+template< typename Pixel, std::size_t KernSize >
+constexpr image< Pixel > transform_image ( image< Pixel > const & src, separable_kernel< KernSize > const & sep_kern );
+
 template< typename Pixel >
-constexpr image< Pixel > mean_blur_image ( image< Pixel > const & src, dynamic_mean_blur< Pixel > const & blur );
+constexpr image< Pixel > mean_blur_image ( image< Pixel > const & src, std::size_t const blur_radius );
+
+template< typename Pixel >
+constexpr image< Pixel > mean_blur_image_sep ( image< Pixel > const & src, std::size_t const blur_radius );
 
 
 namespace detail
@@ -143,29 +145,125 @@ constexpr void _transform_image_impl ( image< Pixel > const & src, image< Pixel 
         }
 }
 
-template< typename Pixel >
-constexpr void _mean_blur_image_impl ( image< Pixel > const & src, image< Pixel > & dest, dynamic_mean_blur< Pixel > const & blur )
+template< typename Pixel, std::size_t KernSize >
+constexpr void _transform_image_impl ( image< Pixel > const & src, image< Pixel > & dest, separable_kernel< KernSize > const & sep_kern )
 {
-        for( std::size_t i = blur.size_ / 2; i < src.height() - blur.size_ / 2 - 1; ++i )
+        image< Pixel > tmp( src.width(), dest.height() );
+
+        for( std::size_t i = KernSize / 2; i < src.height() - KernSize / 2 - 1; ++i )
         {
-                for( std::size_t j = blur.size_ / 2; j < src.width() - blur.size_ / 2 - 1; ++j )
+                for( std::size_t j = 0; j < src.width(); ++j )
                 {
                         for( std::size_t c = 0; c < Pixel::channels; ++c )
                         {
                                 double val = 0;
 
-                                for( std::size_t ki = 0; ki < blur.size_; ++ki )
+                                for( std::size_t ki = 0; ki < KernSize; ++ki )
                                 {
-                                        for( std::size_t kj = 0; kj < blur.size_; ++kj )
+                                        val += src.at( i + ki - KernSize / 2, j ).values[ c ] * sep_kern.vertical[ ki ];
+                                }
+
+                                val /= sep_kern.weight_v;
+                                val = std::abs( val );
+
+                                tmp.at( i - KernSize / 2, j ).values[ c ] = static_cast< unsigned char >( val );
+                        }
+                }
+        }
+
+        for( std::size_t i = 0; i < tmp.height(); ++i )
+        {
+                for( std::size_t j = KernSize / 2; j < tmp.width() - KernSize / 2 - 1; ++j )
+                {
+                        for( std::size_t c = 0; c < Pixel::channels; ++c )
+                        {
+                                double val = 0;
+
+                                for( std::size_t ki = 0; ki < KernSize; ++ki )
+                                {
+                                        val += tmp.at( i, j + ki - KernSize / 2 ).values[ c ] * sep_kern.horizontal[ ki ];
+                                }
+
+                                val /= sep_kern.weight_h;
+                                val = std::abs( val );
+
+                                dest.at( i, j - KernSize / 2 ).values[ c ] = static_cast< unsigned char >( val );
+                        }
+                }
+        }
+}
+
+template< typename Pixel >
+constexpr void _mean_blur_image_impl ( image< Pixel > const & src, image< Pixel > & dest, std::size_t const blur_radius )
+{
+        for( std::size_t i = blur_radius / 2; i < src.height() - blur_radius / 2 - 1; ++i )
+        {
+                for( std::size_t j = blur_radius / 2; j < src.width() - blur_radius / 2 - 1; ++j )
+                {
+                        for( std::size_t c = 0; c < Pixel::channels; ++c )
+                        {
+                                double val = 0;
+
+                                for( std::size_t ki = 0; ki < blur_radius; ++ki )
+                                {
+                                        for( std::size_t kj = 0; kj < blur_radius; ++kj )
                                         {
-                                                val += src.at( i + ki - blur.size_ / 2, j + kj - blur.size_ / 2  ).values[ c ] * blur.vals[ ki ][ kj ];
+                                                val += src.at( i + ki - blur_radius / 2, j + kj - blur_radius / 2  ).values[ c ];
                                         }
                                 }
 
-                                val /= blur.weight;
+                                val /= blur_radius * blur_radius;
                                 val = std::abs( val );
 
-                                dest.at( i - blur.size_ / 2, j - blur.size_ / 2 ).values[ c ] = static_cast< unsigned char >( val );
+                                dest.at( i - blur_radius / 2, j - blur_radius / 2 ).values[ c ] = static_cast< unsigned char >( val );
+                        }
+                }
+        }
+}
+
+template< typename Pixel >
+constexpr void _mean_blur_image_sep_impl ( image< Pixel > const & src, image< Pixel > & dest, std::size_t const blur_radius )
+{
+        image< Pixel > tmp( src.width(), dest.height() );
+
+        for( std::size_t i = blur_radius / 2; i < src.height() - blur_radius / 2 - 1; ++i )
+        {
+                for( std::size_t j = 0; j < src.width(); ++j )
+                {
+                        for( std::size_t c = 0; c < Pixel::channels; ++c )
+                        {
+                                double val = 0;
+
+                                for( std::size_t ki = 0; ki < blur_radius; ++ki )
+                                {
+                                        val += src.at( i + ki - blur_radius / 2, j  ).values[ c ];
+                                }
+
+                                val /= blur_radius;
+                                val = std::abs( val );
+
+                                tmp.at( i - blur_radius / 2, j ).values[ c ] = static_cast< unsigned char >( val );
+                        }
+                }
+        }
+
+        for( std::size_t i = 0; i < dest.height(); ++i )
+        {
+                for( std::size_t j = blur_radius / 2; j < tmp.width() - blur_radius / 2 - 1; ++j )
+                {
+                        for( std::size_t c = 0; c < Pixel::channels; ++c )
+                        {
+                                double val = 0;
+
+                                for( std::size_t ki = 0; ki < blur_radius; ++ki )
+                                {
+                                        val += tmp.at( i, j + ki - blur_radius / 2 ).values[ c ];
+                                }
+
+                                val /= blur_radius;
+                                val = std::abs( val );
+
+                                dest.at( i, j - blur_radius / 2 ).values[ c ] = static_cast< unsigned char >( val );
                         }
                 }
         }
@@ -185,12 +283,32 @@ constexpr image< Pixel > transform_image ( image< Pixel > const & src, kernel< K
         return dest;
 }
 
-template< typename Pixel >
-constexpr image< Pixel > mean_blur_image ( image< Pixel > const & src, dynamic_mean_blur< Pixel > const & blur )
+template< typename Pixel, std::size_t KernSize >
+constexpr image< Pixel > transform_image ( image< Pixel > const & src, separable_kernel< KernSize > const & sep_kern )
 {
-        image< Pixel > dest( src.width() - blur.size_, src.height() - blur.size_ );
+        image< Pixel > dest( src.width() - KernSize, src.height() - KernSize );
 
-        detail::_mean_blur_image_impl( src, dest, blur );
+        detail::_transform_image_impl( src, dest, sep_kern );
+
+        return dest;
+}
+
+template< typename Pixel >
+constexpr image< Pixel > mean_blur_image ( image< Pixel > const & src, std::size_t const blur_radius )
+{
+        image< Pixel > dest( src.width() - blur_radius, src.height() - blur_radius );
+
+        detail::_mean_blur_image_impl( src, dest, blur_radius );
+
+        return dest;
+}
+
+template< typename Pixel >
+constexpr image< Pixel > mean_blur_image_sep ( image< Pixel > const & src, std::size_t const blur_radius )
+{
+        image< Pixel > dest( src.width() - blur_radius, src.height() - blur_radius );
+
+        detail::_mean_blur_image_sep_impl( src, dest, blur_radius );
 
         return dest;
 }
