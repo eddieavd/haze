@@ -1,4 +1,3 @@
-/* vim: set ft=cpp: */
 //
 //
 //      HAZElib
@@ -44,8 +43,6 @@ kernel void transform ( device unsigned char const * src, device unsigned char *
                 avg = -avg;
         }
 
-//        avg += 127;
-
         dest[ index ] = static_cast< unsigned char >( avg );
 }
 
@@ -82,6 +79,70 @@ kernel void transform_thicc ( device unsigned long const * src, device unsigned 
         }
 
         dest[ index ] = static_cast< unsigned >( avg );
+}
+
+kernel void transform_vert ( device unsigned char const * src, device unsigned char * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
+{
+        unsigned img_width     = static_cast< unsigned >( meta[ 0 ] );
+        unsigned kernel_size   = static_cast< unsigned >( meta[ 1 ] );
+        float    kernel_weight = meta[ 2 ];
+
+        unsigned half_k_s = kernel_size / 2;
+        unsigned src_width = img_width;
+
+        unsigned row = index / img_width;
+        unsigned col = index % img_width;
+
+        unsigned row_src = row + half_k_s;
+        unsigned col_src = col;
+
+        float avg = 0;
+
+        for( unsigned i = 0; i < kernel_size; ++i )
+        {
+                avg += src[ ( row_src - half_k_s + i ) * src_width + col_src ] * meta[ i + 3 ];
+        }
+
+        avg /= kernel_weight;
+
+        if( avg < 0 )
+        {
+                avg = -avg;
+        }
+
+        dest[ index ] = static_cast< unsigned char >( avg );
+}
+
+kernel void transform_hor ( device unsigned char const * src, device unsigned char * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
+{
+        unsigned img_width     = static_cast< unsigned >( meta[ 0 ] );
+        unsigned kernel_size   = static_cast< unsigned >( meta[ 1 ] );
+        float    kernel_weight = meta[ 2 ];
+
+        unsigned half_k_s = kernel_size / 2;
+        unsigned src_width = img_width + kernel_size;
+
+        unsigned row = index / img_width;
+        unsigned col = index % img_width;
+
+        unsigned row_src = row;
+        unsigned col_src = col + half_k_s;
+
+        float avg = 0;
+
+        for( unsigned i = 0; i < kernel_size; ++i )
+        {
+                avg += src[ row_src * src_width + ( col_src - half_k_s + i ) ] * meta[ i + 3 ];
+        }
+
+        avg /= kernel_weight;
+
+        if( avg < 0 )
+        {
+                avg = -avg;
+        }
+
+        dest[ index ] = static_cast< unsigned char >( avg );
 }
 
 kernel void geometric_combine ( device unsigned char const * lhs, device unsigned char const * rhs, device unsigned char * dest, unsigned index [[ thread_position_in_grid ]] )
@@ -363,8 +424,6 @@ kernel void lens_blur_field ( device unsigned long const * src, device unsigned 
 
         unsigned excl_cnt = 0;
 
-        // TODO: do it row by row bro
-
         for( unsigned y = 0; y < half_blur_r; ++y )
         {
                 unsigned yy = half_blur_r - y;
@@ -450,6 +509,87 @@ kernel void lens_blur_field ( device unsigned long const * src, device unsigned 
         }
 
         avg /= ( blur_radius * blur_radius ) - excl_cnt;
+
+        if( avg > 255 )
+        {
+                avg = 255;
+        }
+
+        dest[ index ] = static_cast< unsigned char >( avg );
+}
+
+kernel void lens_blur_field_direct ( device unsigned long const * src, device unsigned char * dest, device unsigned const * meta, unsigned index [[ thread_position_in_grid ]] )
+{
+        unsigned img_width   = meta[ 0 ];
+        unsigned blur_radius = meta[ 1 ];
+        unsigned half_blur_r = blur_radius / 2;
+        unsigned src_width   = img_width + blur_radius;
+
+        unsigned row = index / img_width;
+        unsigned col = index % img_width;
+
+        unsigned row_src = row + half_blur_r;
+        unsigned col_src = col + half_blur_r;
+
+        float avg = 0;
+
+        unsigned x1 = col_src - half_blur_r;
+        unsigned y1 = row_src - half_blur_r;
+        unsigned x2 = col_src + half_blur_r;
+        unsigned y2 = row_src + half_blur_r;
+
+        unsigned incl_cnt = 0;
+
+        for( unsigned y = 0; y < half_blur_r; ++y )
+        {
+                unsigned yy = half_blur_r - y;
+                unsigned xx = sqrt( static_cast< float >( half_blur_r * half_blur_r - yy * yy ) );
+
+                unsigned x = half_blur_r - xx;
+
+                if( x1 + x == 0 )
+                {
+                        // top half of kernel
+
+                        if( y1 + y == 0 )
+                        {
+                                avg += src[ ( y1 + y ) * src_width + x2 - x ];
+                        }
+                        else
+                        {
+                                avg += src[ ( y1 + y ) * src_width + x2 - x ] - src[ ( y1 + y - 1 ) * src_width + x2 - x ];
+                        }
+
+                        // bottom half of kernel
+
+                        avg += src[ ( y2 - y ) * src_width + x2 - x ] - src[ ( y2 - y - 1 ) * src_width + x2 - x ];
+                }
+                else
+                {
+                        // top half of kernel
+
+                        if( y1 + y == 0 )
+                        {
+                                avg += src[ ( y1 + y ) * src_width + x2 - x ] - src[ ( y1 + y ) * src_width + x1 + x - 1 ];
+                        }
+                        else
+                        {
+                                avg += src[ ( y1 + y ) * src_width + x2 - x ] - src[ ( y1 + y     ) * src_width + x1 + x - 1 ]
+                                                                              - src[ ( y1 + y - 1 ) * src_width + x2 - x     ]
+                                                                              + src[ ( y1 + y - 1 ) * src_width + x1 + x - 1 ];
+                        }
+
+                        // bottom half of kernel
+
+                        avg += src[ ( y2 - y ) * src_width + x2 - x ] - src[ ( y2 - y     ) * src_width + x1 + x - 1 ]
+                                                                      - src[ ( y2 - y - 1 ) * src_width + x2 - x     ]
+                                                                      + src[ ( y2 - y - 1 ) * src_width + x1 + x - 1 ];
+                }
+
+                incl_cnt += 2 * ( blur_radius - ( 2 * x ) );
+        }
+
+        avg /= incl_cnt;
 
         if( avg > 255 )
         {

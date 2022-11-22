@@ -45,6 +45,19 @@ public:
 #endif
         }
 
+#if 0
+        template< std::size_t Size >
+        image< Pixel > transform_image ( image< Pixel > const & src, separable_kernel< Size > const & kern )
+        {
+#ifndef GPU
+                return transform_image( src, kern );
+#elif defined METAL
+                return mtl_ops.transform_image( src, kern );
+#else
+#endif
+        }
+#endif
+
         image< Pixel > detect_edges ( image< Pixel > const & src )
         {
 #ifndef GPU
@@ -88,6 +101,16 @@ public:
                 return src.get_lens_blurred_image( blur_radius );
 #elif defined METAL
                 return mtl_ops.lens_blur( src, blur_radius );
+#else
+#endif
+        }
+
+        image< Pixel > lens_blur_direct ( pixel_field< Pixel > const & src, unsigned const blur_radius )
+        {
+#ifndef GPU
+                return src.get_lens_blurred_image( blur_radius );
+#elif defined METAL
+                return mtl_ops.lens_blur_direct( src, blur_radius );
 #else
 #endif
         }
