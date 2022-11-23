@@ -37,29 +37,6 @@ struct separable_kernel
         float weight_h;
 };
 
-template< typename T >
-struct dynamic_mean_blur
-{
-        using value_type = float;
-
-        dynamic_mean_blur ( std::size_t const size ) : size_( size )
-        {
-                for( std::size_t i = 0; i < size; ++i )
-                {
-                        vals.emplace_back();
-
-                        for( std::size_t j = 0; j < size; ++j )
-                        {
-                                vals[ i ].emplace_back( 1 );
-                        }
-                }
-        }
-
-        std::size_t size_;
-        float       weight;
-        std::vector< std::vector< float > > vals;
-};
-
 
 constexpr static kernel< 1, 1 > identity_1{ { { 1 } }, 1 };
 
