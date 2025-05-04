@@ -19,20 +19,21 @@ template< meta::pixel_like PixelType > class image ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template< meta::pixel_like PixelType, template< meta::pixel_like > typename ImageType >
+template< meta::pixel_like PixelType, typename ImageType >
 class row_iterator
 {
         struct begin_tag {} ;
         struct   end_tag {} ;
 public:
         using        pixel_type = PixelType  ;
+        using        image_type = ImageType  ;
         using        value_type = pixel_type ;
         using        ssize_type = ssize_t    ;
         using   difference_type = ssize_type ;
         using iterator_category = uti::random_access_iterator_tag ;
 
-        using raw_pixel_type = uti::remove_cv_t< pixel_type >                            ;
-        using     image_type = uti::copy_cv_t< pixel_type, ImageType< raw_pixel_type > > ;
+        using image_pointer   = uti::add_pointer_t         < uti::copy_cv_t< pixel_type, image_type > > ;
+        using image_reference = uti::add_lvalue_reference_t< uti::copy_cv_t< pixel_type, image_type > > ;
 
         friend image_type ;
 
@@ -41,11 +42,11 @@ public:
 
         constexpr row_iterator () noexcept = default ;
 
-        constexpr row_iterator ( image_type * _image_, ssize_type _row_, ssize_type _col_ ) noexcept
+        constexpr row_iterator ( image_pointer _image_, ssize_type _row_, ssize_type _col_ ) noexcept
                 : image_( _image_ ), row_( _row_ ), col_( _col_ ) {}
 
-        constexpr row_iterator ( image_type * _image_, begin_tag ) noexcept : row_iterator( _image_,                 0, 0 ) {}
-        constexpr row_iterator ( image_type * _image_,   end_tag ) noexcept : row_iterator( _image_, _image_->height(), 0 ) {}
+        constexpr row_iterator ( image_pointer _image_, begin_tag ) noexcept : row_iterator( _image_,                 0, 0 ) {}
+        constexpr row_iterator ( image_pointer _image_,   end_tag ) noexcept : row_iterator( _image_, _image_->height(), 0 ) {}
 
         constexpr row_iterator             ( row_iterator const &  ) noexcept = default ;
         constexpr row_iterator             ( row_iterator       && ) noexcept = default ;
@@ -183,28 +184,34 @@ public:
 
         constexpr bool operator>= ( row_iterator const & _other_ ) const noexcept
         { return ( row_ * image_->width() + col_ ) >= ( _other_.row_ * _other_.image_->width() + _other_.col_ ) ; }
-private:
-        image_type * image_ ;
-        ssize_type     row_ ;
-        ssize_type     col_ ;
+
+        constexpr ssize_type row () const noexcept { return row_ ; }
+        constexpr ssize_type col () const noexcept { return col_ ; }
+
+        constexpr image_type & img_ref () const noexcept { return *image_ ; }
+
+        image_pointer image_ ;
+        ssize_type      row_ ;
+        ssize_type      col_ ;
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template< meta::pixel_like PixelType, template< meta::pixel_like > typename ImageType >
+template< meta::pixel_like PixelType, typename ImageType >
 class column_iterator
 {
         struct begin_tag {} ;
         struct   end_tag {} ;
 public:
         using        pixel_type = PixelType  ;
+        using        image_type = ImageType  ;
         using        value_type = pixel_type ;
         using        ssize_type = ssize_t    ;
         using   difference_type = ssize_type ;
         using iterator_category = uti::random_access_iterator_tag ;
 
-        using raw_pixel_type = uti::remove_cv_t< pixel_type >                            ;
-        using     image_type = uti::copy_cv_t< pixel_type, ImageType< raw_pixel_type > > ;
+        using image_pointer   = uti::add_pointer_t         < uti::copy_cv_t< pixel_type, image_type > > ;
+        using image_reference = uti::add_lvalue_reference_t< uti::copy_cv_t< pixel_type, image_type > > ;
 
         friend image_type ;
 
@@ -213,11 +220,11 @@ public:
 
         constexpr column_iterator () noexcept = default ;
 
-        constexpr column_iterator ( image_type * _image_, ssize_type _row_, ssize_type _col_ ) noexcept
+        constexpr column_iterator ( image_pointer _image_, ssize_type _row_, ssize_type _col_ ) noexcept
                 : image_( _image_ ), row_( _row_ ), col_( _col_ ) {}
 
-        constexpr column_iterator ( image_type * _image_, begin_tag ) noexcept : column_iterator( _image_, 0,                0 ) {}
-        constexpr column_iterator ( image_type * _image_,   end_tag ) noexcept : column_iterator( _image_, 0, _image_->width() ) {}
+        constexpr column_iterator ( image_pointer _image_, begin_tag ) noexcept : column_iterator( _image_, 0,                0 ) {}
+        constexpr column_iterator ( image_pointer _image_,   end_tag ) noexcept : column_iterator( _image_, 0, _image_->width() ) {}
 
         constexpr column_iterator             ( column_iterator const &  ) noexcept = default ;
         constexpr column_iterator             ( column_iterator       && ) noexcept = default ;
@@ -355,10 +362,15 @@ public:
 
         constexpr bool operator>= ( column_iterator const & _other_ ) const noexcept
         { return ( col_ * image_->height() + row_ ) >= ( _other_.col_ * _other_.image_->height() + _other_.row_ ) ; }
-private:
-        image_type * image_ ;
-        ssize_type     row_ ;
-        ssize_type     col_ ;
+
+        constexpr ssize_type row () const noexcept { return row_ ; }
+        constexpr ssize_type col () const noexcept { return col_ ; }
+
+        constexpr image_type & img_ref () const noexcept { return *image_ ; }
+
+        image_pointer image_ ;
+        ssize_type      row_ ;
+        ssize_type      col_ ;
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////

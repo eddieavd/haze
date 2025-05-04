@@ -10,6 +10,7 @@
 #include <haze/image/meta.hxx>
 #include <haze/image/pixel.hxx>
 #include <haze/image/image_iterator.hxx>
+#include <haze/image/image_view.hxx>
 
 #include <uti/core/container/vector.hxx>
 //#include <uti/core/container/range.hxx>
@@ -23,6 +24,7 @@ namespace haze
 template< meta::pixel_like PixelType >
 class image
 {
+        using _self = image< PixelType > ;
 public:
         using pixel_type    = PixelType            ;
         using value_type    = pixel_type           ;
@@ -33,13 +35,13 @@ public:
         using       iterator = typename pixel_storage::      iterator ;
         using const_iterator = typename pixel_storage::const_iterator ;
 
-        using               row_iterator = ::haze::   row_iterator< pixel_type      , image > ;
-        using         const_row_iterator = ::haze::   row_iterator< pixel_type const, image > ;
+        using               row_iterator = ::haze::   row_iterator< pixel_type      , _self > ;
+        using         const_row_iterator = ::haze::   row_iterator< pixel_type const, _self > ;
         using       reverse_row_iterator = ::uti::reverse_iterator<            row_iterator > ;
         using const_reverse_row_iterator = ::uti::reverse_iterator<      const_row_iterator > ;
 
-        using               column_iterator = ::haze::column_iterator< pixel_type      , image > ;
-        using         const_column_iterator = ::haze::column_iterator< pixel_type const, image > ;
+        using               column_iterator = ::haze::column_iterator< pixel_type      , _self > ;
+        using         const_column_iterator = ::haze::column_iterator< pixel_type const, _self > ;
         using       reverse_column_iterator = ::uti::reverse_iterator<         column_iterator > ;
         using const_reverse_column_iterator = ::uti::reverse_iterator<   const_column_iterator > ;
 
@@ -64,12 +66,19 @@ public:
         constexpr image ( pixel_storage && _pixels_, ssize_type _width_, ssize_type _height_ ) noexcept
                 : width_( _width_ ), height_( _height_ ), pixels_( UTI_MOVE( _pixels_ ) ) {}
 
+        template< meta::image_like ImageType >
+        constexpr image ( ImageType const & _other_ ) noexcept
+                : width_( _other_.width() ), height_( _other_.height() ), pixels_( _other_.row_begin(), _other_.row_end() ) {}
+
         constexpr image             ( image const &  _other_ ) noexcept : width_ ( _other_. width_ ), height_ ( _other_.height_ ), pixels_ (           _other_.pixels_   ) {                                                       }
         constexpr image             ( image       && _other_ ) noexcept : width_ ( _other_. width_ ), height_ ( _other_.height_ ), pixels_ ( UTI_MOVE( _other_.pixels_ ) ) { _other_.width_ = _other_.height_ = 0 ;                }
         constexpr image & operator= ( image const &  _other_ ) noexcept { width_ = _other_. width_ ;  height_ = _other_.height_ ;  pixels_ =           _other_.pixels_   ;                                          return *this ; }
         constexpr image & operator= ( image       && _other_ ) noexcept { width_ = _other_. width_ ;  height_ = _other_.height_ ;  pixels_ = UTI_MOVE( _other_.pixels_ ) ;   _other_.width_ = _other_.height_ = 0 ; return *this ; }
 
         constexpr ~image () noexcept = default ;
+
+        template< meta::image_like ImageType >
+        constexpr void place ( ImageType const & _other_, ssize_type _row_, ssize_type _col_ ) noexcept ;
 
         template< typename Self >
         UTI_NODISCARD constexpr decltype( auto ) operator[] ( this Self && self, ssize_type _x_ ) noexcept
@@ -80,6 +89,9 @@ public:
         { return UTI_FWD( self ).pixels_.at( _row_ * UTI_FWD( self ).width_ + _col_ ) ; }
 
         UTI_NODISCARD constexpr image subimage ( ssize_type const _row_, ssize_type const _col_, ssize_type const _width_, ssize_type const _height_ ) const noexcept ;
+
+        UTI_NODISCARD constexpr image_view< pixel_type      , _self > subview ( ssize_type const _row_, ssize_type const _col_, ssize_type const _width_, ssize_type const _height_ )       noexcept ;
+        UTI_NODISCARD constexpr image_view< pixel_type const, _self > subview ( ssize_type const _row_, ssize_type const _col_, ssize_type const _width_, ssize_type const _height_ ) const noexcept ;
 
         UTI_NODISCARD constexpr ssize_type  width () const noexcept { return  width_ ; }
         UTI_NODISCARD constexpr ssize_type height () const noexcept { return height_ ; }
@@ -182,6 +194,27 @@ image< PixelType >::image ( pixel_type _fill_, ssize_type _width_, ssize_type _h
 ////////////////////////////////////////////////////////////////////////////////
 
 template< meta::pixel_like PixelType >
+template< meta::image_like ImageType >
+constexpr void
+image< PixelType >::place ( ImageType const & _other_, ssize_type _row_, ssize_type _col_ ) noexcept
+{
+        auto dest = subview( _row_, _col_, width() - _col_, height() - _row_ ) ;
+
+        auto w = uti::min( dest. width(), _other_. width() ) ;
+        auto h = uti::min( dest.height(), _other_.height() ) ;
+
+        for( ssize_type i = 0; i < h; ++i )
+        {
+                for( ssize_type j = 0; j < w; ++j )
+                {
+                        dest.at( i, j ) = _other_.at( i, j ) ;
+                }
+        }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template< meta::pixel_like PixelType >
 UTI_NODISCARD constexpr
 image< PixelType >
 image< PixelType >::subimage ( ssize_type const _row_, ssize_type const _col_, ssize_type const _width_, ssize_type const _height_ ) const noexcept
@@ -200,6 +233,34 @@ image< PixelType >::subimage ( ssize_type const _row_, ssize_type const _col_, s
                 }
         }
         return sub ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template< meta::pixel_like PixelType >
+UTI_NODISCARD constexpr
+image_view< PixelType, image< PixelType > >
+image< PixelType >::subview ( ssize_type const _row_, ssize_type const _col_, ssize_type const _width_, ssize_type const _height_ ) noexcept
+{
+        UTI_CEXPR_ASSERT( 0 <= _row_ && _row_ + _height_ < height_ &&
+                          0 <= _col_ && _col_ +  _width_ <  width_  ,
+                          "haze::image::subview: index out of bounds"
+        ) ;
+        return image_view< PixelType, image >( this, _row_, _col_, _width_, _height_ ) ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template< meta::pixel_like PixelType >
+UTI_NODISCARD constexpr
+image_view< PixelType const, image< PixelType > >
+image< PixelType >::subview ( ssize_type const _row_, ssize_type const _col_, ssize_type const _width_, ssize_type const _height_ ) const noexcept
+{
+        UTI_CEXPR_ASSERT( 0 <= _row_ && _row_ + _height_ < height_ &&
+                          0 <= _col_ && _col_ +  _width_ <  width_  ,
+                          "haze::image::subview: index out of bounds"
+        ) ;
+        return image_view< PixelType, image >( this, _row_, _col_, _width_, _height_ ) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
