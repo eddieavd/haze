@@ -16,33 +16,70 @@ namespace haze
 {
 
 
+////////////////////////////////////////////////////////////////////////////////
+
 template< uti::meta::arithmetic T, ssize_t Channels >
 struct generic_pixel
 {
+        using value_type = T ;
+
         static constexpr ssize_t num_channels { Channels } ;
 
-        T channels[ num_channels ] ;
+        value_type channels[ num_channels ] ;
 } ;
 
-template< uti::meta::arithmetic T > struct mono_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
-template< uti::meta::arithmetic T > struct  rgb_generic_pixel : public generic_pixel< T, 3 > { enum { RED = 0, GREEN = 1, BLUE = 2            } ; } ;
-template< uti::meta::arithmetic T > struct rgba_generic_pixel : public generic_pixel< T, 4 > { enum { RED = 0, GREEN = 1, BLUE = 2, ALPHA = 3 } ; } ;
-template< uti::meta::arithmetic T > struct bgra_generic_pixel : public generic_pixel< T, 4 > { enum { RED = 2, GREEN = 1, BLUE = 0, ALPHA = 3 } ; } ;
+// template< uti::meta::arithmetic T > struct ycrcb_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
+// template< uti::meta::arithmetic T > struct ycbcr_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
+// template< uti::meta::arithmetic T > struct     y_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
+template< uti::meta::arithmetic T > struct  mono_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
+template< uti::meta::arithmetic T > struct   rgb_generic_pixel : public generic_pixel< T, 3 > { enum { RED = 0, GREEN = 1, BLUE = 2            } ; } ;
+template< uti::meta::arithmetic T > struct  rgba_generic_pixel : public generic_pixel< T, 4 > { enum { RED = 0, GREEN = 1, BLUE = 2, ALPHA = 3 } ; } ;
+template< uti::meta::arithmetic T > struct  bgra_generic_pixel : public generic_pixel< T, 4 > { enum { RED = 2, GREEN = 1, BLUE = 0, ALPHA = 3 } ; } ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 namespace meta
 {
 
+
+/*
+template< typename PixelType >
+concept yuv_pixel = requires
+{
+        uti::meta::instantiated_from< uti::remove_cv_t< PixelType >, ycrcb_generic_pixel > ||
+        uti::meta::instantiated_from< uti::remove_cv_t< PixelType >, ycbcr_generic_pixel >  ;
+} ;
+
+template< typename PixelType >
+concept color_pixel = requires
+{
+        PixelType::num_channels >= 3 ;
+} ;
+
+template< typename PixelType >
+concept gray_pixel = requires
+{
+        PixelType::num_channels == 1 ;
+} ;
+
+template< typename PixelType >
+concept normal_pixel = color_pixel< PixelType > || gray_pixel< PixelType > ;
+
+template< typename PixelType >
+concept pixel = yuv_pixel< PixelType > || normal_pixel< PixelType > ;
+*/
+
 template< typename PixelType >
 concept pixel_like = requires( PixelType pixel )
 {
+        typename PixelType::value_type ;
         { PixelType::num_channels } -> uti::meta::convertible_to< ssize_t > ;
-        { pixel.channels[ 0 ]     } ;
+        { pixel.channels[ 0 ]     } -> uti::meta::convertible_to< typename PixelType::value_type > ;
         uti::meta::arithmetic< uti::remove_reference_t< decltype( pixel.channels[ 0 ] ) > > ;
 } ;
 
-}
+
+} // namespace meta
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -64,10 +101,15 @@ using bgra_thicc_pixel = bgra_generic_pixel< i64_t > ;
 template< meta::pixel_like PixelType >
 constexpr PixelType & operator+= ( PixelType & _lhs_, PixelType _rhs_ ) noexcept
 {
-        for( ssize_t i = 0; i < PixelType::num_channels; ++i )
+        [ & ]< ssize_t... Idxs >( uti::index_sequence< Idxs... > )
         {
-                _lhs_.channels[ i ] += _rhs_.channels[ i ] ;
-        }
+                ( ... ,
+                [ & ]
+                {
+                        _lhs_.channels[ Idxs ] += _rhs_.channels[ Idxs ] ;
+                }() ) ;
+        }( uti::make_index_sequence< PixelType::num_channels >{} ) ;
+
         return _lhs_ ;
 }
 
@@ -76,10 +118,15 @@ constexpr PixelType & operator+= ( PixelType & _lhs_, PixelType _rhs_ ) noexcept
 template< meta::pixel_like PixelType >
 constexpr PixelType & operator-= ( PixelType & _lhs_, PixelType _rhs_ ) noexcept
 {
-        for( ssize_t i = 0; i < PixelType::num_channels; ++i )
+        [ & ]< ssize_t... Idxs >( uti::index_sequence< Idxs... > )
         {
-                _lhs_.channels[ i ] -= _rhs_.channels[ i ] ;
-        }
+                ( ... ,
+                [ & ]
+                {
+                        _lhs_.channels[ Idxs ] -= _rhs_.channels[ Idxs ] ;
+                }() ) ;
+        }( uti::make_index_sequence< PixelType::num_channels >{} ) ;
+
         return _lhs_ ;
 }
 
@@ -88,10 +135,15 @@ constexpr PixelType & operator-= ( PixelType & _lhs_, PixelType _rhs_ ) noexcept
 template< meta::pixel_like PixelType >
 constexpr PixelType & operator*= ( PixelType & _pixel_, ssize_t _scale_ ) noexcept
 {
-        for( ssize_t i = 0; i < PixelType::num_channels; ++i )
+        [ & ]< ssize_t... Idxs >( uti::index_sequence< Idxs... > )
         {
-                _pixel_.channels[ i ] *= _scale_ ;
-        }
+                ( ... ,
+                [ & ]
+                {
+                        _pixel_.channels[ Idxs ] *= _scale_ ;
+                }() ) ;
+        }( uti::make_index_sequence< PixelType::num_channels >{} ) ;
+
         return _pixel_ ;
 }
 
@@ -100,10 +152,15 @@ constexpr PixelType & operator*= ( PixelType & _pixel_, ssize_t _scale_ ) noexce
 template< meta::pixel_like PixelType >
 constexpr PixelType & operator/= ( PixelType & _pixel_, ssize_t _scale_ ) noexcept
 {
-        for( ssize_t i = 0; i < PixelType::num_channels; ++i )
+        [ & ]< ssize_t... Idxs >( uti::index_sequence< Idxs... > )
         {
-                _pixel_.channels[ i ] /= _scale_ ;
-        }
+                ( ... ,
+                [ & ]
+                {
+                        _pixel_.channels[ Idxs ] /= _scale_ ;
+                }() ) ;
+        }( uti::make_index_sequence< PixelType::num_channels >{} ) ;
+
         return _pixel_ ;
 }
 

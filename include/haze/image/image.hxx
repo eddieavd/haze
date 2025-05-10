@@ -7,6 +7,11 @@
 #pragma once
 
 #include <haze/common/types.hxx>
+
+#include <haze/geo/meta.hxx>
+#include <haze/geo/point.hxx>
+#include <haze/geo/rectangle.hxx>
+
 #include <haze/image/meta.hxx>
 #include <haze/image/pixel.hxx>
 #include <haze/image/image_iterator.hxx>
@@ -31,6 +36,9 @@ public:
         using pixel_storage = vector< pixel_type > ;
 
         using ssize_type = ssize_t ;
+
+        using shape_type = generic_rectangle< ssize_type > ;
+        using point_type = typename shape_type::point_type ;
 
         using       iterator = typename pixel_storage::      iterator ;
         using const_iterator = typename pixel_storage::const_iterator ;
@@ -80,6 +88,9 @@ public:
         template< meta::image_like ImageType >
         constexpr void place ( ImageType const & _other_, ssize_type _row_, ssize_type _col_ ) noexcept ;
 
+        template< meta::image_like ImageType >
+        constexpr void place_channel ( ImageType const & _other_, ssize_type _row_, ssize_type _col_, ssize_type _channel_ ) noexcept ;
+
         template< typename Self >
         UTI_NODISCARD constexpr decltype( auto ) operator[] ( this Self && self, ssize_type _x_ ) noexcept
         { return UTI_FWD( self ).pixels_[ _x_ ] ; }
@@ -95,6 +106,8 @@ public:
 
         UTI_NODISCARD constexpr ssize_type  width () const noexcept { return  width_ ; }
         UTI_NODISCARD constexpr ssize_type height () const noexcept { return height_ ; }
+
+        UTI_NODISCARD constexpr shape_type shape () const noexcept { return shape_type{ point_type{ 0, 0 }, point_type{ width(), height() } } ; }
 
         template< typename Self >
         UTI_NODISCARD constexpr decltype( auto ) pixels ( this Self && self ) noexcept
@@ -208,6 +221,27 @@ image< PixelType >::place ( ImageType const & _other_, ssize_type _row_, ssize_t
                 for( ssize_type j = 0; j < w; ++j )
                 {
                         dest.at( i, j ) = _other_.at( i, j ) ;
+                }
+        }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template< meta::pixel_like PixelType >
+template< meta::image_like ImageType >
+constexpr void
+image< PixelType >::place_channel ( ImageType const & _other_, ssize_type _row_, ssize_type _col_, ssize_type _channel_ ) noexcept
+{
+        auto dest = subview( _row_, _col_, width() - _col_, height() - _row_ ) ;
+
+        auto w = uti::min( dest. width(), _other_. width() ) ;
+        auto h = uti::min( dest.height(), _other_.height() ) ;
+
+        for( ssize_type i = 0; i < h; ++i )
+        {
+                for( ssize_type j = 0; j < w; ++j )
+                {
+                        dest.at( i, j ).channels[ _channel_ ] = _other_.at( i, j ).channels[ _channel_ ] ;
                 }
         }
 }
