@@ -31,32 +31,28 @@
 
 #include <raylib.h>
 
-#ifdef RED
-#undef RED
-#endif
-#ifdef GREEN
-#undef GREEN
-#endif
-#ifdef BLUE
-#undef BLUE
-#endif
+ /////////////////////////////////////
+/// raysan please prefix your shit ///
+///                                ///
+#ifdef RED                         ///
+#undef RED                         ///
+#endif                             ///
+#ifdef GREEN                       ///
+#undef GREEN                       ///
+#endif                             ///
+#ifdef BLUE                        ///
+#undef BLUE                        ///
+#endif                             ///
+///                                ///
+/////////////////////////////////////
 
 
-constexpr Image as_ray_image ( haze::image< haze::rgb_pixel > & _image_ ) noexcept
-{
-        return Image
-        {
-                _image_.pixels().data() ,
-                static_cast< int >( _image_. width() ) ,
-                static_cast< int >( _image_.height() ) ,
-                1 ,
-                PIXELFORMAT_UNCOMPRESSED_R8G8B8 ,
-        } ;
-}
+template< haze::meta::pixel_like PixelType >
+constexpr Image as_ray_image ( haze::image< PixelType > & _image_ ) noexcept ;
 
 [[ maybe_unused ]] constexpr auto compare_red = []( auto const & lhs, auto const & rhs ){ return lhs.channels[ lhs.RED ] < rhs.channels[ rhs.RED ] ; } ;
 
-using pixel_t = haze::rgb_pixel ;
+using pixel_t = haze::rgba_pixel ;
 using image_t = haze::image< pixel_t > ;
 
 using line_anim_t = haze::line_animator< haze::linear_interpolator, image_t > ;
@@ -67,19 +63,19 @@ using rect_anim_t = haze::parallel_animator< line_anim_t, line_anim_t, line_anim
 
 using seq_anim_t = haze::sequential_animator< parallel_anim_t, parallel_anim_t > ;
 
-using anim_t = haze::parallel_animator< seq_anim_t, line_anim_t > ;
+using animator_t = haze::parallel_animator< seq_anim_t, line_anim_t > ;
 
 int main ()
 {
-        static constexpr int fps { 30 } ;
+        static constexpr int fps { 120 } ;
 
-        image_t image( pixel_t{ 0, 0, 0 }, 512, 512 ) ;
+        image_t image( pixel_t{ 0, 0, 0, 255 }, 512, 512 ) ;
 
         haze::rectangle rect{ { 32, 32 }, { 512 - 32, 512 - 32 } } ;
         haze::circle circ{ { 256, 256 }, 128 } ;
 
-        haze::fill_shape( image, rect, pixel_t{ 0, 255, 0 } ) ;
-        haze::fill_shape( image, circ, pixel_t{ 0, 0, 255 } ) ;
+        haze::fill_shape( image, rect, pixel_t{ 255, 255,   0, 32 } ) ;
+        haze::fill_shape( image, circ, pixel_t{   0,   0, 255, 32 } ) ;
 
         [[ maybe_unused ]] haze::line line1{ {                 8,                  8 }, {                 8, image.height() - 8 } } ;
         [[ maybe_unused ]] haze::line line2{ {                 8,                  8 }, { image.width() - 8,                  8 } } ;
@@ -90,12 +86,12 @@ int main ()
 
         haze::animation_params params{ fps, haze::milliseconds( 500 ) } ;
 
-        anim_t animator ;
+        animator_t animator ;
 
         seq_anim_t & seq_anim_1 = animator.get< 0 >() ;
         line_anim_t & line_anim = animator.get< 1 >() ;
 
-        line_anim.set_animation( line5, pixel_t{ 255, 0, 0 }, { fps, haze::seconds( 1 ) } ) ;
+        line_anim.set_animation( line5, pixel_t{ 255, 0, 0, 255 }, { fps, params.length * 2 } ) ;
 
         parallel_anim_t & p_anim_1 = seq_anim_1.get< 0 >() ;
         parallel_anim_t & p_anim_2 = seq_anim_1.get< 1 >() ;
@@ -105,14 +101,16 @@ int main ()
         line_anim_t & line_anim_3 = p_anim_2.get< 0 >() ;
         line_anim_t & line_anim_4 = p_anim_2.get< 1 >() ;
 
-        line_anim_1.set_animation( line1, pixel_t{ 255, 0, 0 }, params ) ;
-        line_anim_2.set_animation( line2, pixel_t{ 255, 0, 0 }, params ) ;
-        line_anim_3.set_animation( line3, pixel_t{ 255, 0, 0 }, params ) ;
-        line_anim_4.set_animation( line4, pixel_t{ 255, 0, 0 }, params ) ;
+        line_anim_1.set_animation( line1, pixel_t{ 255, 0, 0, 255 }, params ) ;
+        line_anim_2.set_animation( line2, pixel_t{ 255, 0, 0, 255 }, params ) ;
+        line_anim_3.set_animation( line3, pixel_t{ 255, 0, 0, 255 }, params ) ;
+        line_anim_4.set_animation( line4, pixel_t{ 255, 0, 0, 255 }, params ) ;
 
         haze::vector< image_t > frames( animator.expected_frames() ) ;
 
+        printf( "haze : animation generator initialized\n" ) ;
         printf( "haze : expecting %ld frames\n", frames.capacity() ) ;
+        printf( "haze : starting animation...\n" ) ;
 
         frames.push_back( image ) ;
 
@@ -124,7 +122,6 @@ int main ()
 
                 frames.push_back( animator.cframe() ) ;
         }
-
         printf( "haze : generated %ld frames\n", frames.size() - 1 ) ;
 
         InitWindow( image.width(), image.height(), "haze demo" ) ;
@@ -139,94 +136,7 @@ int main ()
                 auto & frame = frames.at( idx++ ) ;
                 Texture2D texture = LoadTextureFromImage( as_ray_image( frame ) ) ;
 
-                BeginDrawing() ;
-                DrawTexture( texture, 0, 0, WHITE ) ;
-                EndDrawing() ;
-
-                UnloadTexture( texture ) ;
-        }
-        CloseWindow() ;
-/*
-        image_t image( pixel_t{ 0, 0, 0 }, 512, 512 ) ;
-
-        [[ maybe_unused ]] haze::line line1{ {                 8,                  8 }, {                 8, image.height() - 8 } } ;
-        [[ maybe_unused ]] haze::line line2{ {                 8,                  8 }, { image.width() - 8,                  8 } } ;
-        [[ maybe_unused ]] haze::line line3{ {                 8, image.height() - 8 }, { image.width() - 8, image.height() - 8 } } ;
-        [[ maybe_unused ]] haze::line line4{ { image.width() - 8,                  8 }, { image.width() - 8, image.height() - 8 } } ;
-
-        [[ maybe_unused ]] haze::line line5{ {                 8,                  8 }, { image.width() / 2, image.height() / 2 } } ;
-        [[ maybe_unused ]] haze::line line6{ { image.width() / 2, image.height() / 2 }, { image.width() - 8, image.height() - 8 } } ;
-
-        [[ maybe_unused ]] haze::line linex{ {                 8, image.height() - 8 }, { image.width() - 8,                  8 } } ;
-
-        haze::animation_params params{ 30, haze::milliseconds( 500 ) } ;
-
-        pixel_t stroke{ 255, 0, 0 } ;
-
-        anim_t animator( image ) ;
-
-        seq_anim_t & seq_anim_1 = animator.get< 0 >() ;
-        line_anim_t & line_anim_z = animator.get< 1 >() ;
-
-        parallel_anim_t & p_anim_1 = seq_anim_1.get< 0 >() ;
-        parallel_anim_t & p_anim_2 = seq_anim_1.get< 1 >() ;
-
-        line_anim_t & line_anim_1 = p_anim_1.get< 0 >() ;
-        line_anim_t & line_anim_2 = p_anim_1.get< 1 >() ;
-        line_anim_t & line_anim_x = p_anim_1.get< 2 >() ;
-        line_anim_t & line_anim_3 = p_anim_2.get< 0 >() ;
-        line_anim_t & line_anim_4 = p_anim_2.get< 1 >() ;
-        line_anim_t & line_anim_y = p_anim_2.get< 2 >() ;
-
-        line_anim_1.set_animation( line1, stroke, params ) ;
-        line_anim_2.set_animation( line2, stroke, params ) ;
-        line_anim_x.set_animation( line5, stroke, params ) ;
-        line_anim_3.set_animation( line3, stroke, params ) ;
-        line_anim_4.set_animation( line4, stroke, params ) ;
-        line_anim_y.set_animation( line6, stroke, params ) ;
-
-        line_anim_z.set_animation( linex, stroke, { 30, haze::seconds( 1 ) } ) ;
-
-        printf( "haze :   vertical line len is %ld\n", line1.length() ) ;
-        printf( "haze : horizontal line len is %ld\n", line2.length() ) ;
-        printf( "haze :   diagonal line len is %ld\n", line5.length() ) ;
-
-//      auto frame = animator.get_frame_ref() ;
-
-        haze::vector< image_t > frames( seq_anim_1.expected_frames() + 1 ) ;
-        frames.push_back( image ) ;
-
-        printf( "haze : expecting %ld frames\n", frames.capacity() ) ;
-
-        while( !seq_anim_1.finished() )
-        {
-                seq_anim_1.generate_next_frame() ;
-
-                frames.push_back( seq_anim_1.cframe() ) ;
-        }
-//      frames.erase_stable( frames.size() / 2 - 1 ) ;
-
-        printf( "haze : generated %ld frames\n", frames.size() ) ;
-
-        haze::string export_path( "anim.png" ) ;
-
-        for( auto const & frame : frames )
-        {
-                haze::store_image( export_path, frame ) ;
-                export_path.insert( 'x', 4 ) ;
-        }
-
-        InitWindow( image.width(), image.height(), "haze demo" ) ;
-        SetTargetFPS( 30 ) ;
-
-        int idx {} ;
-
-        while( !WindowShouldClose() )
-        {
-                if( idx >= frames.size() ) idx = 0 ;
-
-                auto & frame = frames.at( idx++ ) ;
-                Texture2D texture( LoadTextureFromImage( as_ray_image( frame ) ) ) ;
+                ClearBackground( BLACK ) ;
 
                 BeginDrawing() ;
                 DrawTexture( texture, 0, 0, WHITE ) ;
@@ -235,8 +145,34 @@ int main ()
                 UnloadTexture( texture ) ;
         }
         CloseWindow() ;
-*/
 
 
         return 0 ;
+}
+
+template< haze::meta::pixel_like PixelType >
+constexpr Image as_ray_image ( haze::image< PixelType > & _image_ ) noexcept
+{
+        if constexpr( uti::meta::same_as< PixelType, haze::rgb_pixel > )
+        {
+                return Image
+                {
+                        _image_.pixels().data() ,
+                        static_cast< int >( _image_. width() ) ,
+                        static_cast< int >( _image_.height() ) ,
+                        1 ,
+                        PIXELFORMAT_UNCOMPRESSED_R8G8B8 ,
+                } ;
+        }
+        if constexpr( uti::meta::same_as< PixelType, haze::rgba_pixel > )
+        {
+                return Image
+                {
+                        _image_.pixels().data() ,
+                        static_cast< int >( _image_. width() ) ,
+                        static_cast< int >( _image_.height() ) ,
+                        1 ,
+                        PIXELFORMAT_UNCOMPRESSED_R8G8B8A8 ,
+                } ;
+        }
 }
