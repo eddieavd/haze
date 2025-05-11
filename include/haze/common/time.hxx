@@ -24,7 +24,7 @@ concept time_like = requires( TimeType time )
 {
         typename TimeType::time_tag ;
         { TimeType::factor } -> uti::meta::convertible_to< double > ;
-        { time.val       } -> uti::meta::convertible_to< double > ;
+        { time.val         } -> uti::meta::convertible_to< double > ;
 } ;
 
 
