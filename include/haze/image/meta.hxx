@@ -17,6 +17,19 @@ namespace haze::meta
 {
 
 
+////////////////////////////////////////////////////////////////////////////////
+
+template< typename PixelType >
+concept pixel_like = requires( PixelType pixel )
+{
+        typename PixelType::value_type ;
+        { PixelType::num_channels } -> uti::meta::convertible_to< ssize_t > ;
+        { pixel.channels[ 0 ]     } -> uti::meta::convertible_to< typename PixelType::value_type > ;
+        uti::meta::arithmetic< uti::remove_reference_t< decltype( pixel.channels[ 0 ] ) > > ;
+} ;
+
+////////////////////////////////////////////////////////////////////////////////
+
 template< typename Image >
 concept image_like = requires( Image img )
 {
@@ -30,6 +43,8 @@ concept image_like = requires( Image img )
         { img.height(                  ) } -> uti::meta::convertible_to<            uti::ssize_t    > ;
         { img.at( ssize_t(), ssize_t() ) } -> uti::meta::convertible_to< typename Image::pixel_type > ;
 } ;
+
+////////////////////////////////////////////////////////////////////////////////
 
 
 } // namespace haze::meta

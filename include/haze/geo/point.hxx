@@ -85,21 +85,6 @@ struct generic_point_nd
                 }( uti::make_index_sequence< dimensions >{} ) ;
         }
 
-        template< typename Self, typename Callable, typename... Args >
-                requires( uti::meta::invocable< Callable, ssize_t, Args&&... > &&
-                         !uti::meta::same_as< decltype( uti::declval< Callable & >()( ssize_t{}, uti::declval< Args&& >()... ) ), void > )
-        UTI_NODISCARD constexpr decltype( auto ) for_each ( this Self &&, Callable _fn_, Args&&... _args_ ) noexcept
-        {
-                return [ & ]< ssize_t... Idxs >( uti::index_sequence< Idxs... > )
-                {
-                        return ( ... &&
-                        [ & ]
-                        {
-                                return _fn_( Idxs, UTI_FWD( _args_ )... ) ;
-                        }() ) ;
-                }( uti::make_index_sequence< dimensions >{} ) ;
-        }
-
 ////////////////////////////////////////////////////////////////////////////////
 
         UTI_NODISCARD constexpr value_type distance ( generic_point_nd const & _other_ ) const noexcept
@@ -113,18 +98,6 @@ struct generic_point_nd
                         auto diff_x = _other_.x() - x() ;
                         auto diff_y = _other_.y() - y() ;
                         return std::sqrt( ( diff_x * diff_x ) + ( diff_y * diff_y ) ) ;
-/*
-                        auto dist = x() == _other_.x() ? _other_.y() - y()
-                                  : y() == _other_.y() ? _other_.x() - x()
-                                  : [ & ]
-                        {
-                                auto diff_x = _other_.x() - x() ;
-                                auto diff_y = _other_.y() - y() ;
-                                return std::sqrt( ( diff_x * diff_x ) + ( diff_y * diff_y ) ) ;
-                        }() ;
-                        if( dist < 0 ) dist = -dist ;
-                        return dist ;
-*/
                 }
                 else
                 {
@@ -142,11 +115,13 @@ struct generic_point_nd
 
         UTI_NODISCARD constexpr bool operator== ( generic_point_nd const & _other_ ) const noexcept
         {
-                return for_each( [ & ]( ssize_t idx, generic_point_nd const & other ){ return coords[ idx ] == other.coords[ idx ] ; }, _other_ ) ;
+                bool eq { true } ;
+                for_each( [ & ]( ssize_t idx, generic_point_nd const & other ){ if( coords[ idx ] != other.coords[ idx ] ) eq = false ; }, _other_ ) ;
+                return eq ;
         }
         UTI_NODISCARD constexpr bool operator!= ( generic_point_nd const & _other_ ) const noexcept
         {
-                return for_each( [ & ]( ssize_t idx, generic_point_nd const & other ){ return coords[ idx ] != other.coords[ idx ] ; }, _other_ ) ;
+                return !operator==( _other_ ) ;
         }
 
 ////////////////////////////////////////////////////////////////////////////////

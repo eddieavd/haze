@@ -16,6 +16,8 @@ namespace haze
 {
 
 
+////////////////////////////////////////////////////////////////////////////////
+
 template< meta::animator_like... Anims >
 class parallel_animator
 {
@@ -102,6 +104,8 @@ private:
                 _get_first().set_frame( UTI_MOVE( frame ) ) ;
         }
 } ;
+
+////////////////////////////////////////////////////////////////////////////////
 
 
 } // namespace haze

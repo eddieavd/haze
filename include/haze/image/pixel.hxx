@@ -10,6 +10,7 @@
 #include <uti/core/meta/concepts.hxx>
 
 #include <haze/common/types.hxx>
+#include <haze/image/meta.hxx>
 
 
 namespace haze
@@ -28,58 +29,14 @@ struct generic_pixel
         value_type channels[ num_channels ] ;
 } ;
 
-// template< uti::meta::arithmetic T > struct ycrcb_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
-// template< uti::meta::arithmetic T > struct ycbcr_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
-// template< uti::meta::arithmetic T > struct     y_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
+/*
+template< uti::meta::arithmetic T > struct ycrcb_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
+template< uti::meta::arithmetic T > struct ycbcr_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
+template< uti::meta::arithmetic T > struct     y_generic_pixel : public generic_pixel< T, 1 > {                                                    } ; */
 template< uti::meta::arithmetic T > struct  mono_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
 template< uti::meta::arithmetic T > struct   rgb_generic_pixel : public generic_pixel< T, 3 > { enum { RED = 0, GREEN = 1, BLUE = 2            } ; } ;
 template< uti::meta::arithmetic T > struct  rgba_generic_pixel : public generic_pixel< T, 4 > { enum { RED = 0, GREEN = 1, BLUE = 2, ALPHA = 3 } ; } ;
 template< uti::meta::arithmetic T > struct  bgra_generic_pixel : public generic_pixel< T, 4 > { enum { RED = 2, GREEN = 1, BLUE = 0, ALPHA = 3 } ; } ;
-
-////////////////////////////////////////////////////////////////////////////////
-
-namespace meta
-{
-
-
-/*
-template< typename PixelType >
-concept yuv_pixel = requires
-{
-        uti::meta::instantiated_from< uti::remove_cv_t< PixelType >, ycrcb_generic_pixel > ||
-        uti::meta::instantiated_from< uti::remove_cv_t< PixelType >, ycbcr_generic_pixel >  ;
-} ;
-
-template< typename PixelType >
-concept color_pixel = requires
-{
-        PixelType::num_channels >= 3 ;
-} ;
-
-template< typename PixelType >
-concept gray_pixel = requires
-{
-        PixelType::num_channels == 1 ;
-} ;
-
-template< typename PixelType >
-concept normal_pixel = color_pixel< PixelType > || gray_pixel< PixelType > ;
-
-template< typename PixelType >
-concept pixel = yuv_pixel< PixelType > || normal_pixel< PixelType > ;
-*/
-
-template< typename PixelType >
-concept pixel_like = requires( PixelType pixel )
-{
-        typename PixelType::value_type ;
-        { PixelType::num_channels } -> uti::meta::convertible_to< ssize_t > ;
-        { pixel.channels[ 0 ]     } -> uti::meta::convertible_to< typename PixelType::value_type > ;
-        uti::meta::arithmetic< uti::remove_reference_t< decltype( pixel.channels[ 0 ] ) > > ;
-} ;
-
-
-} // namespace meta
 
 ////////////////////////////////////////////////////////////////////////////////
 

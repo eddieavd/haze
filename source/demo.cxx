@@ -25,7 +25,7 @@
 
 #include <haze/render/draw.hxx>
 #include <haze/render/interpolator.hxx>
-#include <haze/render/basic_animator.hxx>
+#include <haze/render/line_animator.hxx>
 #include <haze/render/parallel_animator.hxx>
 #include <haze/render/sequential_animator.hxx>
 
@@ -59,7 +59,7 @@ constexpr Image as_ray_image ( haze::image< haze::rgb_pixel > & _image_ ) noexce
 using pixel_t = haze::rgb_pixel ;
 using image_t = haze::image< pixel_t > ;
 
-using line_anim_t = haze::basic_line_animator< haze::linear_interpolator, image_t > ;
+using line_anim_t = haze::line_animator< haze::linear_interpolator, image_t > ;
 
 using parallel_anim_t = haze::parallel_animator< line_anim_t, line_anim_t > ;
 
@@ -67,34 +67,47 @@ using rect_anim_t = haze::parallel_animator< line_anim_t, line_anim_t, line_anim
 
 using seq_anim_t = haze::sequential_animator< parallel_anim_t, parallel_anim_t > ;
 
+using anim_t = haze::parallel_animator< seq_anim_t, line_anim_t > ;
+
 int main ()
 {
         static constexpr int fps { 30 } ;
 
         image_t image( pixel_t{ 0, 0, 0 }, 512, 512 ) ;
 
+        haze::rectangle rect{ { 32, 32 }, { 512 - 32, 512 - 32 } } ;
+        haze::circle circ{ { 256, 256 }, 128 } ;
+
+        haze::fill_shape( image, rect, pixel_t{ 0, 255, 0 } ) ;
+        haze::fill_shape( image, circ, pixel_t{ 0, 0, 255 } ) ;
+
         [[ maybe_unused ]] haze::line line1{ {                 8,                  8 }, {                 8, image.height() - 8 } } ;
         [[ maybe_unused ]] haze::line line2{ {                 8,                  8 }, { image.width() - 8,                  8 } } ;
         [[ maybe_unused ]] haze::line line3{ {                 8, image.height() - 8 }, { image.width() - 8, image.height() - 8 } } ;
         [[ maybe_unused ]] haze::line line4{ { image.width() - 8,                  8 }, { image.width() - 8, image.height() - 8 } } ;
 
-        haze::animation_params params{ fps, haze::milliseconds( 1000 ) } ;
+        [[ maybe_unused ]] haze::line line5{ { 8, 8 }, { image.width() - 8, image.height() - 8 } } ;
 
-        rect_anim_t animator( image ) ;
+        haze::animation_params params{ fps, haze::milliseconds( 500 ) } ;
 
-//      seq_anim_t animator( image ) ;
+        anim_t animator ;
 
-//      parallel_anim_t & p_anim_1 = animator.get< 0 >() ;
-//      parallel_anim_t & p_anim_2 = animator.get< 1 >() ;
+        seq_anim_t & seq_anim_1 = animator.get< 0 >() ;
+        line_anim_t & line_anim = animator.get< 1 >() ;
 
-        line_anim_t & line_anim_1 = animator.get< 0 >() ;
-        line_anim_t & line_anim_2 = animator.get< 1 >() ;
-        line_anim_t & line_anim_3 = animator.get< 2 >() ;
-        line_anim_t & line_anim_4 = animator.get< 3 >() ;
+        line_anim.set_animation( line5, pixel_t{ 255, 0, 0 }, { fps, haze::seconds( 1 ) } ) ;
+
+        parallel_anim_t & p_anim_1 = seq_anim_1.get< 0 >() ;
+        parallel_anim_t & p_anim_2 = seq_anim_1.get< 1 >() ;
+
+        line_anim_t & line_anim_1 = p_anim_1.get< 0 >() ;
+        line_anim_t & line_anim_2 = p_anim_1.get< 1 >() ;
+        line_anim_t & line_anim_3 = p_anim_2.get< 0 >() ;
+        line_anim_t & line_anim_4 = p_anim_2.get< 1 >() ;
 
         line_anim_1.set_animation( line1, pixel_t{ 255, 0, 0 }, params ) ;
-        line_anim_2.set_animation( line3, pixel_t{ 255, 0, 0 }, params ) ;
-        line_anim_3.set_animation( line2, pixel_t{ 255, 0, 0 }, params ) ;
+        line_anim_2.set_animation( line2, pixel_t{ 255, 0, 0 }, params ) ;
+        line_anim_3.set_animation( line3, pixel_t{ 255, 0, 0 }, params ) ;
         line_anim_4.set_animation( line4, pixel_t{ 255, 0, 0 }, params ) ;
 
         haze::vector< image_t > frames( animator.expected_frames() ) ;
@@ -102,6 +115,8 @@ int main ()
         printf( "haze : expecting %ld frames\n", frames.capacity() ) ;
 
         frames.push_back( image ) ;
+
+        animator.set_frame( image ) ;
 
         while( !animator.finished() )
         {

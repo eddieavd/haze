@@ -17,6 +17,12 @@ namespace haze
 {
 
 
+////////////////////////////////////////////////////////////////////////////////
+/// TODO: get _invoke_on_current to return references
+///       to avoid code duplication in frame() and release()
+///
+////////////////////////////////////////////////////////////////////////////////
+
 template< meta::animator_like... Anims >
 class sequential_animator
 {
@@ -53,10 +59,8 @@ public:
                 return _get_last().finished() ;
         }
 
-        UTI_NODISCARD constexpr decltype( auto ) get_frame_ref () const noexcept
-        {
-                return _invoke_on_current( []( auto const & anim ) -> image_type const & { return anim.frame() ; } ) ;
-        }
+//      UTI_NODISCARD constexpr image_type       & frame ()       noexcept { return _invoke_on_current( []( auto       & anim ) -> image_type       & { return anim.frame() ; } ) ; }
+//      UTI_NODISCARD constexpr image_type const & frame () const noexcept { return _invoke_on_current( []( auto const & anim ) -> image_type const & { return anim.frame() ; } ) ; }
 
         UTI_NODISCARD constexpr image_type & frame () noexcept
         {
@@ -108,6 +112,8 @@ public:
         }
 
         UTI_NODISCARD constexpr image_type const & cframe () const noexcept { return frame() ; }
+
+//      UTI_NODISCARD constexpr image_type && release () noexcept { return _invoke_on_current( []( auto & anim ) -> image_type && { return anim.release() ; } ) ; }
 
         UTI_NODISCARD constexpr image_type && release () noexcept
         {
@@ -193,30 +199,6 @@ private:
         {
                 using raw_result_type = decltype( uti::declval< Callable & >()( uti::declval< uti::add_lvalue_reference_t< uti::copy_cv_t< Self, first_animator_type > > >() ) ) ;
 
-                [ & ]< ssize_type... Idxs >( uti::index_sequence< Idxs... > )
-                {
-                        ( ... ||
-                        [ & ]
-                        {
-                                if constexpr( Idxs != animator_count - 1 )
-                                {
-                                        auto & anim = uti::get< Idxs >( UTI_FWD( self ).animators_ ) ;
-
-                                        if( !anim.finished() )
-                                        {
-                                                return _fn_( anim ) ;
-                                        }
-                                        return raw_result_type{} ;
-                                }
-                                else
-                                {
-                                        return _fn_( UTI_FWD( self )._get_last() ) ;
-                                }
-                        }() ) ;
-                }( uti::make_index_sequence< animator_count >{} ) ;
-/*
-                using raw_result_type = decltype( uti::declval< Callable & >()( uti::declval< uti::add_lvalue_reference_t< uti::copy_cv_t< Self, first_animator_type > > >() ) ) ;
-
                 static constexpr bool result_is_ref { uti::is_reference_v< raw_result_type > } ;
 
                 using result_type = uti::conditional_t< result_is_ref, uti::reference_wrapper< uti::remove_reference_t< raw_result_type > >, raw_result_type > ;
@@ -245,8 +227,8 @@ private:
                                 }
                         }() ) ;
                 }( uti::make_index_sequence< animator_count >{} ) ;
+
                 return result ;
-*/
         }
 
         constexpr void _generate_next_frame () noexcept
@@ -274,6 +256,8 @@ private:
                 }( uti::make_index_sequence< animator_count >{} ) ;
         }
 } ;
+
+////////////////////////////////////////////////////////////////////////////////
 
 
 } // namespace haze

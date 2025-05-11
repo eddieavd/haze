@@ -14,6 +14,8 @@ namespace haze
 {
 
 
+////////////////////////////////////////////////////////////////////////////////
+
 template< meta::image_like ImageType >
 constexpr void invert_image ( ImageType & _image_ ) noexcept
 {
@@ -24,6 +26,8 @@ constexpr void invert_image ( ImageType & _image_ ) noexcept
                 pixel.channels[ 2 ] = 255 - pixel.channels[ 2 ] ;
         }
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 
 } // namespace haze

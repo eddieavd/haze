@@ -6,10 +6,26 @@
 
 #pragma once
 
+#include <haze/common/types.hxx>
+#include <haze/common/time.hxx>
 #include <haze/image/meta.hxx>
 
 
-namespace haze::meta
+namespace haze
+{
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct animation_params
+{
+        double frame_rate ;
+        duration   length ;
+} ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace meta
 {
 
 
@@ -28,11 +44,15 @@ concept animator_like = requires( Animator anim )
         { anim.              reset() } ;
         { anim.generate_next_frame() } ;
         { anim.           finished() } -> uti::meta::same_as< bool > ;
-//      { anim.release() } -> uti::meta::same_as< typename Animator::image_type && > ;
-
+        { anim.release() } -> uti::meta::same_as< typename Animator::image_type && > ;
         { anim.set_frame( uti::declval< typename Animator::image_type const &  >() ) } ;
         { anim.set_frame( uti::declval< typename Animator::image_type       && >() ) } ;
 } ;
 
 
-} // namespace haze::meta
+} // namespace meta
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+} // namespace haze

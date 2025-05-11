@@ -67,8 +67,6 @@ UTI_NODISCARD constexpr T operator/ ( T const & _lhs_, U const & _rhs_ ) noexcep
 
 ////////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////////////////////
-
 class duration
 {
 public:
@@ -77,12 +75,12 @@ public:
 
         constexpr duration ( double _seconds_ ) noexcept : duration( seconds( _seconds_ ) ) {}
 
-        UTI_NODISCARD constexpr  nanoseconds to_nanos  () const noexcept { return               nanos_   ; }
-        UTI_NODISCARD constexpr microseconds to_micros () const noexcept { return microseconds( nanos_ ) ; }
-        UTI_NODISCARD constexpr milliseconds to_millis () const noexcept { return milliseconds( nanos_ ) ; }
-        UTI_NODISCARD constexpr      seconds to_secs   () const noexcept { return      seconds( nanos_ ) ; }
-        UTI_NODISCARD constexpr      minutes to_mins   () const noexcept { return      minutes( nanos_ ) ; }
-        UTI_NODISCARD constexpr        hours to_hours  () const noexcept { return        hours( nanos_ ) ; }
+        UTI_NODISCARD constexpr  nanoseconds to_nanos  () const noexcept { return nanos_ ; }
+        UTI_NODISCARD constexpr microseconds to_micros () const noexcept { return nanos_ ; }
+        UTI_NODISCARD constexpr milliseconds to_millis () const noexcept { return nanos_ ; }
+        UTI_NODISCARD constexpr      seconds to_secs   () const noexcept { return nanos_ ; }
+        UTI_NODISCARD constexpr      minutes to_mins   () const noexcept { return nanos_ ; }
+        UTI_NODISCARD constexpr        hours to_hours  () const noexcept { return nanos_ ; }
 private:
         nanoseconds nanos_ ;
 } ;

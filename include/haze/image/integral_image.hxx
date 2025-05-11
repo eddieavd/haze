@@ -17,6 +17,8 @@ namespace haze
 {
 
 
+////////////////////////////////////////////////////////////////////////////////
+
 template< typename PixelType > class integral_image ;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -225,8 +227,8 @@ template< typename PixelType >
 class integral_image
 {
 public:
-        using pixel_type    = PixelType                                            ;
-        using value_type    = pixel_type                                           ;
+        using pixel_type    = PixelType                                  ;
+        using value_type    = pixel_type                                 ;
         using pixel_storage = prefix_array< prefix_array< pixel_type > > ;
 
         using ssize_type = ssize_t ;
