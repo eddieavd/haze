@@ -22,7 +22,6 @@ namespace meta
 template< typename TimeType >
 concept time_like = requires( TimeType time )
 {
-        typename TimeType::time_tag ;
         { TimeType::factor } -> uti::meta::convertible_to< double > ;
         { time.val         } -> uti::meta::convertible_to< double > ;
 } ;
@@ -32,12 +31,25 @@ concept time_like = requires( TimeType time )
 
 ////////////////////////////////////////////////////////////////////////////////
 
-struct  nanoseconds { struct time_tag {} ; static constexpr double factor { 1000000000.0      } ; double val ; template< meta::time_like T > constexpr operator T () const noexcept { return T{ val / factor * T::factor } ; } } ;
-struct microseconds { struct time_tag {} ; static constexpr double factor { 1000000.0         } ; double val ; template< meta::time_like T > constexpr operator T () const noexcept { return T{ val / factor * T::factor } ; } } ;
-struct milliseconds { struct time_tag {} ; static constexpr double factor { 1000.0            } ; double val ; template< meta::time_like T > constexpr operator T () const noexcept { return T{ val / factor * T::factor } ; } } ;
-struct      seconds { struct time_tag {} ; static constexpr double factor { 1.0               } ; double val ; template< meta::time_like T > constexpr operator T () const noexcept { return T{ val / factor * T::factor } ; } } ;
-struct      minutes { struct time_tag {} ; static constexpr double factor { 1.0 / ( 60      ) } ; double val ; template< meta::time_like T > constexpr operator T () const noexcept { return T{ val / factor * T::factor } ; } } ;
-struct        hours { struct time_tag {} ; static constexpr double factor { 1.0 / ( 60 * 60 ) } ; double val ; template< meta::time_like T > constexpr operator T () const noexcept { return T{ val / factor * T::factor } ; } } ;
+template< double Factor >
+struct time
+{
+        static constexpr double factor { Factor } ;
+                         double    val            ;
+
+        template< meta::time_like TimeType >
+        constexpr operator TimeType () const noexcept
+        {
+                return TimeType{ val / factor * TimeType::factor } ;
+        }
+} ;
+
+using  nanoseconds = time< 1000000000.0 > ;
+using microseconds = time< 1000000.0    > ;
+using milliseconds = time< 1000.0       > ;
+using      seconds = time< 1.0          > ;
+using      minutes = time< 1.0 /   60   > ;
+using        hours = time< 1.0 / 3600   > ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
