@@ -6,10 +6,11 @@
 
 #pragma once
 
-#include <uti/core/type/traits.hxx>
-#include <uti/core/meta/concepts.hxx>
-
 #include <haze/common/types.hxx>
+
+#include <haze/geometry/meta.hxx>
+#include <haze/geometry/point.hxx>
+
 #include <haze/image/meta.hxx>
 
 
@@ -24,15 +25,17 @@ struct generic_pixel
 {
         using value_type = T ;
 
+        static constexpr ssize_t   dimensions { Channels } ;
         static constexpr ssize_t num_channels { Channels } ;
 
         value_type channels[ num_channels ] ;
+
+        UTI_NODISCARD constexpr value_type       & operator[] ( ssize_t _idx_ )       noexcept { return channels[ _idx_ ] ; }
+        UTI_NODISCARD constexpr value_type const & operator[] ( ssize_t _idx_ ) const noexcept { return channels[ _idx_ ] ; }
 } ;
 
-/*
-template< uti::meta::arithmetic T > struct ycrcb_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
-template< uti::meta::arithmetic T > struct ycbcr_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
-template< uti::meta::arithmetic T > struct     y_generic_pixel : public generic_pixel< T, 1 > {                                                    } ; */
+////////////////////////////////////////////////////////////////////////////////
+
 template< uti::meta::arithmetic T > struct  mono_generic_pixel : public generic_pixel< T, 1 > {                                                    } ;
 template< uti::meta::arithmetic T > struct   rgb_generic_pixel : public generic_pixel< T, 3 > { enum { RED = 0, GREEN = 1, BLUE = 2            } ; } ;
 template< uti::meta::arithmetic T > struct  rgba_generic_pixel : public generic_pixel< T, 4 > { enum { RED = 0, GREEN = 1, BLUE = 2, ALPHA = 3 } ; } ;

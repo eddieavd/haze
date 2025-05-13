@@ -23,14 +23,13 @@ template< uti::meta::arithmetic T > using generic_coordinate = T ;
 ////////////////////////////////////////////////////////////////////////////////
 
 template< uti::meta::arithmetic T, ssize_t D >
+        requires( D > 0 )
 struct generic_point_nd
 {
         using coordinate_type = generic_coordinate< T > ;
         using      value_type =         coordinate_type ;
 
         static constexpr ssize_t dimensions { D } ;
-
-        static_assert( dimensions >= 1, "haze::generic_point_nd::error: number of dimensions has to be >= 1" ) ;
 
         uti::array< coordinate_type, dimensions > coords ;
 
@@ -54,20 +53,23 @@ struct generic_point_nd
                 }() ;
         }
 
-        UTI_NODISCARD constexpr coordinate_type & x () noexcept requires( dimensions >= 1 ) { return coords[ 0 ] ; }
+        UTI_NODISCARD constexpr coordinate_type       & operator[] ( ssize_t _idx_ )       noexcept { return coords[ _idx_ ] ; }
+        UTI_NODISCARD constexpr coordinate_type const & operator[] ( ssize_t _idx_ ) const noexcept { return coords[ _idx_ ] ; }
+
+        UTI_NODISCARD constexpr coordinate_type & x () noexcept                             { return coords[ 0 ] ; }
         UTI_NODISCARD constexpr coordinate_type & y () noexcept requires( dimensions >= 2 ) { return coords[ 1 ] ; }
         UTI_NODISCARD constexpr coordinate_type & z () noexcept requires( dimensions >= 3 ) { return coords[ 2 ] ; }
         UTI_NODISCARD constexpr coordinate_type & w () noexcept requires( dimensions >= 4 ) { return coords[ 3 ] ; }
 
-        UTI_NODISCARD constexpr coordinate_type const & x () const noexcept requires( dimensions >= 1 ) { return coords[ 0 ] ; }
+        UTI_NODISCARD constexpr coordinate_type const & x () const noexcept                             { return coords[ 0 ] ; }
         UTI_NODISCARD constexpr coordinate_type const & y () const noexcept requires( dimensions >= 2 ) { return coords[ 1 ] ; }
         UTI_NODISCARD constexpr coordinate_type const & z () const noexcept requires( dimensions >= 3 ) { return coords[ 2 ] ; }
         UTI_NODISCARD constexpr coordinate_type const & w () const noexcept requires( dimensions >= 4 ) { return coords[ 3 ] ; }
 
-        UTI_NODISCARD constexpr coordinate_type & col () noexcept requires( dimensions >= 1 ) { return x() ; }
+        UTI_NODISCARD constexpr coordinate_type & col () noexcept                             { return x() ; }
         UTI_NODISCARD constexpr coordinate_type & row () noexcept requires( dimensions >= 2 ) { return y() ; }
 
-        UTI_NODISCARD constexpr coordinate_type const & col () const noexcept requires( dimensions >= 1 ) { return x() ; }
+        UTI_NODISCARD constexpr coordinate_type const & col () const noexcept                             { return x() ; }
         UTI_NODISCARD constexpr coordinate_type const & row () const noexcept requires( dimensions >= 2 ) { return y() ; }
 
         template< typename Self, typename Callable, typename... Args >

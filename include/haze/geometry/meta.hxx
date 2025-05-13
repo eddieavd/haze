@@ -1,7 +1,7 @@
 //
 //
 //      haze
-//      geo/meta.hxx
+//      geometry/meta.hxx
 //
 
 #pragma once
@@ -23,7 +23,7 @@ concept point_like = requires( PointType point )
 
         { PointType::dimensions } ;
         { point.x() } ;
-        { point.coords[ 0 ] } ;
+        { point[ ssize_t{} ] } ;
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,9 +32,14 @@ template< typename ShapeType >
 concept shape_like = requires( ShapeType shape )
 {
         typename ShapeType::point_type ;
+
+        { ShapeType::      dimensions } ;
+        { ShapeType::shape_dimensions } ;
+
         { shape.contains( typename ShapeType::point_type{} ) } -> uti::meta::convertible_to< bool > ;
         { shape.bounding_box() } ;
 } ;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
