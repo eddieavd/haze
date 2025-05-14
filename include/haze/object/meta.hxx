@@ -1,7 +1,7 @@
 //
 //
 //      haze
-//      image/meta.hxx
+//      object/meta.hxx
 //
 
 #pragma once
@@ -12,6 +12,7 @@
 
 #include <haze/common/types.hxx>
 #include <haze/geometry/meta.hxx>
+#include <haze/geometry/rectangle.hxx>
 
 
 namespace haze::meta

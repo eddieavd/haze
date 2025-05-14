@@ -58,6 +58,11 @@ struct generic_line
                 return dist_diff == value_type( 0 ) ;
         }
 
+        UTI_NODISCARD constexpr generic_line normalized () const noexcept
+        {
+                return { {}, { end_point() - begin_point() } } ;
+        }
+
         UTI_NODISCARD constexpr bool operator== ( generic_line const & _other_ ) const noexcept
         { return begin_ == _other_.begin_ && end_ == _other_.end_ ; }
 

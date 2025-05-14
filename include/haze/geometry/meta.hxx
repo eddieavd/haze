@@ -38,6 +38,7 @@ concept shape_like = requires( ShapeType shape )
 
         { shape.contains( typename ShapeType::point_type{} ) } -> uti::meta::convertible_to< bool > ;
         { shape.bounding_box() } ;
+        { shape.  normalized() } -> uti::meta::convertible_to< ShapeType > ;
 } ;
 
 

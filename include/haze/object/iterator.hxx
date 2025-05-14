@@ -1,7 +1,7 @@
 //
 //
 //      haze
-//      image/iterator.hxx
+//      object/iterator.hxx
 //
 
 #pragma once
@@ -12,8 +12,8 @@
 #include <haze/geometry/row_iterator.hxx>
 #include <haze/geometry/column_iterator.hxx>
 
-#include <haze/image/meta.hxx>
-#include <haze/image/pixel.hxx>
+#include <haze/object/meta.hxx>
+#include <haze/object/pixel.hxx>
 
 
 namespace haze
@@ -56,13 +56,13 @@ public:
         constexpr shape_row_iterator () noexcept = default ;
 
         constexpr shape_row_iterator ( shape_object_reference _obj_, begin_tag ) noexcept
-                : _base( _obj_.shape(), typename _base::begin_tag{} ), obj_( &_obj_ ) {}
+                : _base( _obj_.shape().bounding_box().normalized(), typename _base::begin_tag{} ), obj_( &_obj_ ) {}
 
         constexpr shape_row_iterator ( shape_object_reference _obj_, end_tag ) noexcept
-                : _base( _obj_.shape(), typename _base::end_tag{} ), obj_( &_obj_ ) {}
+                : _base( _obj_.shape().bounding_box().normalized(), typename _base::end_tag{} ), obj_( &_obj_ ) {}
 
         constexpr shape_row_iterator ( shape_object_reference _obj_, point_type _curr_ ) noexcept
-                : _base( _obj_.shape(), _curr_ ), obj_( &_obj_ ) {}
+                : _base( _obj_.shape().bounding_box().normalized(), _curr_ ), obj_( &_obj_ ) {}
 
         constexpr shape_row_iterator             ( shape_row_iterator const &  ) noexcept = default ;
         constexpr shape_row_iterator             ( shape_row_iterator       && ) noexcept = default ;
@@ -169,13 +169,13 @@ public:
         constexpr shape_column_iterator () noexcept = default ;
 
         constexpr shape_column_iterator ( shape_object_reference _obj_, begin_tag ) noexcept
-                : _base( _obj_.shape(), typename _base::begin_tag{} ), obj_( &_obj_ ) {}
+                : _base( _obj_.shape().bounding_box().normalized(), typename _base::begin_tag{} ), obj_( &_obj_ ) {}
 
         constexpr shape_column_iterator ( shape_object_reference _obj_, end_tag ) noexcept
-                : _base( _obj_.shape(), typename _base::end_tag{} ), obj_( &_obj_ ) {}
+                : _base( _obj_.shape().bounding_box().normalized(), typename _base::end_tag{} ), obj_( &_obj_ ) {}
 
         constexpr shape_column_iterator ( shape_object_reference _obj_, point_type _curr_ ) noexcept
-                : _base( _obj_.shape(), _curr_ ), obj_( &_obj_ ) {}
+                : _base( _obj_.shape().bounding_box().normalized(), _curr_ ), obj_( &_obj_ ) {}
 
         constexpr shape_column_iterator             ( shape_column_iterator const &  ) noexcept = default ;
         constexpr shape_column_iterator             ( shape_column_iterator       && ) noexcept = default ;

@@ -95,22 +95,37 @@ struct generic_point_nd
                 {
                         return _other_.x() - x() ;
                 }
-                if constexpr( dimensions == 2 )
-                {
-                        auto diff_x = _other_.x() - x() ;
-                        auto diff_y = _other_.y() - y() ;
-                        return std::sqrt( ( diff_x * diff_x ) + ( diff_y * diff_y ) ) ;
-                }
                 else
                 {
-                        uti::array< value_type, dimensions > diffs ;
+                        value_type diff {} ;
                         for_each(
-                                [ & ]( ssize_t idx, auto const & other, auto & diffs )
-                                { diffs[ idx ] = other.coords[ idx ] - coords[ idx ] ; diffs[ idx ] *= diffs[ idx ] ; },
-                        _other_, diffs ) ;
+                        [ & ]( ssize_t idx, auto const & other )
+                        {
+                                auto diff_i { other.coords[ idx ] - coords[ idx ] } ;
+                                diff_i *= diff_i ;
+                                diff += diff_i ;
+                        },
+                        _other_ ) ;
 
-                        return std::sqrt( std::accumulate( diffs.begin(), diffs.end(), value_type{} ) ) ;
+                        return std::sqrt( diff ) ;
                 }
+        }
+
+////////////////////////////////////////////////////////////////////////////////
+
+        UTI_NODISCARD constexpr value_type distance_sqrd ( generic_point_nd const & _other_ ) const noexcept
+        {
+                value_type diff {} ;
+                for_each(
+                [ & ]( ssize_t idx, auto const & other )
+                {
+                        auto diff_i { other.coords[ idx ] - coords[ idx ] } ;
+                        diff_i *= diff_i ;
+                        diff += diff_i ;
+                },
+                _other_ ) ;
+
+                return diff ;
         }
 
 ////////////////////////////////////////////////////////////////////////////////

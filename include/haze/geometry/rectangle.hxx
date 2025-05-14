@@ -63,7 +63,13 @@ struct generic_rectangle
 
         UTI_NODISCARD constexpr generic_rectangle bounding_box () const noexcept
         {
-                return *this ;
+                return { { uti::min( begin_x(), end_x() ), uti::min( begin_y(), end_y() ) } ,
+                         { uti::max( begin_x(), end_x() ), uti::max( begin_y(), end_y() ) } } ;
+        }
+
+        UTI_NODISCARD constexpr generic_rectangle normalized () const noexcept
+        {
+                return { {}, { end_point() - begin_point() } } ;
         }
 
         UTI_NODISCARD constexpr value_type  width () const noexcept { return end_x() - begin_x() ; }

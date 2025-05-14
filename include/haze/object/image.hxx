@@ -1,7 +1,7 @@
 //
 //
 //      haze
-//      image/image.hxx
+//      object/image.hxx
 //
 
 #pragma once
@@ -12,10 +12,10 @@
 #include <haze/geometry/point.hxx>
 #include <haze/geometry/rectangle.hxx>
 
-#include <haze/image/meta.hxx>
-#include <haze/image/pixel.hxx>
-#include <haze/image/iterator.hxx>
-#include <haze/image/image_view.hxx>
+#include <haze/object/meta.hxx>
+#include <haze/object/pixel.hxx>
+#include <haze/object/iterator.hxx>
+#include <haze/object/object_view.hxx>
 
 
 namespace haze
@@ -58,8 +58,23 @@ public:
         constexpr generic_image (                    size_type _width_, size_type _height_ ) UTI_NOEXCEPT_UNLESS_BADALLOC : shape_{ {}, { _width_, _height_ } }, pixels_( _width_ * _height_, pixel_type{} ) {}
         constexpr generic_image ( pixel_type _fill_, size_type _width_, size_type _height_ ) UTI_NOEXCEPT_UNLESS_BADALLOC : shape_{ {}, { _width_, _height_ } }, pixels_( _width_ * _height_,       _fill_ ) {}
 
+        constexpr generic_image (                    shape_type _shape_ ) UTI_NOEXCEPT_UNLESS_BADALLOC : shape_{ _shape_ }, pixels_( shape_.width() * shape_.height(), pixel_type{} ) {}
+        constexpr generic_image ( pixel_type _fill_, shape_type _shape_ ) UTI_NOEXCEPT_UNLESS_BADALLOC : shape_{ _shape_ }, pixels_( shape_.width() * shape_.height(),       _fill_ ) {}
+
         template< meta::image_like ImageType >
         constexpr generic_image ( ImageType const & _other_ ) UTI_NOEXCEPT_UNLESS_BADALLOC ;
+
+        constexpr generic_image ( pixel_storage_type const & _pixels_, size_type _width_, size_type _height_ ) UTI_NOEXCEPT_UNLESS_BADALLOC
+                : shape_{ {}, { _width_, _height_ } }, pixels_( _pixels_ ) {}
+
+        constexpr generic_image ( pixel_storage_type && _pixels_, size_type _width_, size_type _height_ ) noexcept
+                : shape_{ {}, { _width_, _height_ } }, pixels_( UTI_MOVE( _pixels_ ) ) {}
+
+        constexpr generic_image ( pixel_storage_type const & _pixels_, shape_type _shape_ ) UTI_NOEXCEPT_UNLESS_BADALLOC
+                : shape_{ _shape_ }, pixels_( _pixels_ ) {}
+
+        constexpr generic_image ( pixel_storage_type && _pixels_, shape_type _shape_ ) noexcept
+                : shape_{ _shape_ }, pixels_( UTI_MOVE( _pixels_ ) ) {}
 
         constexpr generic_image             ( generic_image const &  _other_ ) UTI_NOEXCEPT_UNLESS_BADALLOC ;
         constexpr generic_image             ( generic_image       && _other_ )     noexcept                 ;
@@ -84,8 +99,6 @@ public:
         UTI_NODISCARD constexpr const_image_view_type subview ( shape_type _rect_ ) const noexcept { return const_image_view_type( *this, _rect_ ) ; }
 
         UTI_NODISCARD constexpr generic_image subimage ( shape_type _rect_ ) const UTI_NOEXCEPT_UNLESS_BADALLOC { return generic_image( subview( _rect_ ) ) ; }
-
-        UTI_NODISCARD constexpr shape_type bounding_box () const noexcept { return shape_ ; }
 
         UTI_NODISCARD constexpr       row_iterator  row_begin ()       noexcept { return       row_iterator( *this, typename       row_iterator::begin_tag{} ) ; }
         UTI_NODISCARD constexpr const_row_iterator  row_begin () const noexcept { return const_row_iterator( *this, typename const_row_iterator::begin_tag{} ) ; }
@@ -122,6 +135,20 @@ private:
         shape_type          shape_ {} ;
         pixel_storage_type pixels_ {} ;
 } ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+template< meta::pixel_like PixelType > using image_2d  = generic_image< PixelType,  point_2d > ;
+template< meta::pixel_like PixelType > using image_2df = generic_image< PixelType, fpoint_2d > ;
+template< meta::pixel_like PixelType > using image_3d  = generic_image< PixelType,  point_3d > ;
+template< meta::pixel_like PixelType > using image_3df = generic_image< PixelType, fpoint_3d > ;
+
+template< meta::pixel_like PixelType > using image = image_2d< PixelType > ;
+
+using mono_image = image< mono_pixel > ;
+using  rgb_image = image<  rgb_pixel > ;
+using rgba_image = image< rgba_pixel > ;
+using bgra_image = image< bgra_pixel > ;
 
 ////////////////////////////////////////////////////////////////////////////////
 

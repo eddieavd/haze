@@ -1,7 +1,7 @@
 //
 //
 //      haze
-//      image/pixel.hxx
+//      object/pixel.hxx
 //
 
 #pragma once
@@ -11,7 +11,7 @@
 #include <haze/geometry/meta.hxx>
 #include <haze/geometry/point.hxx>
 
-#include <haze/image/meta.hxx>
+#include <haze/object/meta.hxx>
 
 
 namespace haze
