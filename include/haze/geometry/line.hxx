@@ -8,6 +8,7 @@
 
 #include <haze/geometry/meta.hxx>
 #include <haze/geometry/point.hxx>
+#include <haze/geometry/rectangle.hxx>
 
 
 namespace haze
@@ -19,9 +20,10 @@ namespace haze
 template< meta::point_like PointType >
 struct generic_line
 {
-        using      point_type =          PointType                   ;
-        using coordinate_type = typename point_type::coordinate_type ;
-        using      value_type = typename point_type::     value_type ;
+        using      point_type =          PointType                     ;
+        using coordinate_type = typename point_type::coordinate_type   ;
+        using      value_type = typename point_type::     value_type   ;
+        using  rectangle_type =   generic_rectangle<      point_type > ;
 
         static constexpr ssize_t       dimensions { point_type::dimensions } ;
         static constexpr ssize_t shape_dimensions {                      1 } ;
@@ -56,6 +58,12 @@ struct generic_line
 
                 value_type dist_diff = begin_.distance( _point_ ) + end_.distance( _point_ ) - begin_.distance( end_ ) ;
                 return dist_diff == value_type( 0 ) ;
+        }
+
+        UTI_NODISCARD constexpr rectangle_type bounding_box () const noexcept
+        {
+                return begin_ < end_ ? rectangle_type{ begin_,   end_ }
+                                     : rectangle_type{   end_, begin_ } ;
         }
 
         UTI_NODISCARD constexpr generic_line normalized () const noexcept

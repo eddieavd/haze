@@ -17,6 +17,8 @@
 #include <haze/object/iterator.hxx>
 #include <haze/object/object_view.hxx>
 
+#include <haze/draw/meta.hxx>
+
 
 namespace haze
 {
@@ -62,7 +64,14 @@ public:
         constexpr generic_image ( pixel_type _fill_, shape_type _shape_ ) UTI_NOEXCEPT_UNLESS_BADALLOC : shape_{ _shape_ }, pixels_( shape_.width() * shape_.height(),       _fill_ ) {}
 
         template< meta::image_like ImageType >
-        constexpr generic_image ( ImageType const & _other_ ) UTI_NOEXCEPT_UNLESS_BADALLOC ;
+        constexpr generic_image ( ImageType const & _other_ ) UTI_NOEXCEPT_UNLESS_BADALLOC
+                : shape_( _other_.shape().normalized() ), pixels_( _other_.width() * _other_.height() )
+        {
+                for( auto iter = _other_.row_begin(); iter < _other_.row_end(); ++iter )
+                {
+                        pixels_.push_back( *iter ) ;
+                }
+        }
 
         constexpr generic_image ( pixel_storage_type const & _pixels_, size_type _width_, size_type _height_ ) UTI_NOEXCEPT_UNLESS_BADALLOC
                 : shape_{ {}, { _width_, _height_ } }, pixels_( _pixels_ ) {}
@@ -76,10 +85,10 @@ public:
         constexpr generic_image ( pixel_storage_type && _pixels_, shape_type _shape_ ) noexcept
                 : shape_{ _shape_ }, pixels_( UTI_MOVE( _pixels_ ) ) {}
 
-        constexpr generic_image             ( generic_image const &  _other_ ) UTI_NOEXCEPT_UNLESS_BADALLOC ;
-        constexpr generic_image             ( generic_image       && _other_ )     noexcept                 ;
-        constexpr generic_image & operator= ( generic_image const &  _other_ ) UTI_NOEXCEPT_UNLESS_BADALLOC ;
-        constexpr generic_image & operator= ( generic_image       && _other_ )     noexcept                 ;
+        constexpr generic_image             ( generic_image const &  _other_ ) UTI_NOEXCEPT_UNLESS_BADALLOC : shape_ { _other_.shape_ }, pixels_ (           _other_.pixels_   ) {                                      }
+        constexpr generic_image             ( generic_image       && _other_ )     noexcept                 : shape_ { _other_.shape_ }, pixels_ ( UTI_MOVE( _other_.pixels_ ) ) { _other_.shape_ = {} ;                }
+        constexpr generic_image & operator= ( generic_image const &  _other_ ) UTI_NOEXCEPT_UNLESS_BADALLOC { shape_ = _other_.shape_  ; pixels_ =           _other_.pixels_   ;                       ; return *this ; }
+        constexpr generic_image & operator= ( generic_image       && _other_ )     noexcept                 { shape_ = _other_.shape_  ; pixels_ = UTI_MOVE( _other_.pixels_ ) ;   _other_.shape_ = {} ; return *this ; }
 
         constexpr ~generic_image () noexcept = default ;
 
@@ -100,37 +109,55 @@ public:
 
         UTI_NODISCARD constexpr generic_image subimage ( shape_type _rect_ ) const UTI_NOEXCEPT_UNLESS_BADALLOC { return generic_image( subview( _rect_ ) ) ; }
 
+//      template< meta::interpolator< pixel_type > Interpolator >
+        UTI_NODISCARD constexpr generic_image scale_up ( size_type _scale_ ) const UTI_NOEXCEPT_UNLESS_BADALLOC
+        {
+                auto new_width  {  width() * _scale_ } ;
+                auto new_height { height() * _scale_ } ;
+
+                generic_image scaled( new_width, new_height ) ;
+
+                for( size_type i = 0; i < new_height; ++i )
+                {
+                        for( size_type j = 0; j < new_width; ++j )
+                        {
+                                scaled.at( { j, i } ) = at( { j / _scale_, i / _scale_ } ) ;
+                        }
+                }
+                return scaled ;
+        }
+
         UTI_NODISCARD constexpr       row_iterator  row_begin ()       noexcept { return       row_iterator( *this, typename       row_iterator::begin_tag{} ) ; }
         UTI_NODISCARD constexpr const_row_iterator  row_begin () const noexcept { return const_row_iterator( *this, typename const_row_iterator::begin_tag{} ) ; }
-        UTI_NODISCARD constexpr const_row_iterator crow_begin () const noexcept { return const_row_iterator( *this, typename const_row_iterator::begin_tag{} ) ; }
+        UTI_NODISCARD constexpr const_row_iterator row_cbegin () const noexcept { return const_row_iterator( *this, typename const_row_iterator::begin_tag{} ) ; }
 
         UTI_NODISCARD constexpr       row_iterator  row_end ()       noexcept { return       row_iterator( *this, typename       row_iterator::end_tag{} ) ; }
         UTI_NODISCARD constexpr const_row_iterator  row_end () const noexcept { return const_row_iterator( *this, typename const_row_iterator::end_tag{} ) ; }
-        UTI_NODISCARD constexpr const_row_iterator crow_end () const noexcept { return const_row_iterator( *this, typename const_row_iterator::end_tag{} ) ; }
+        UTI_NODISCARD constexpr const_row_iterator row_cend () const noexcept { return const_row_iterator( *this, typename const_row_iterator::end_tag{} ) ; }
 
         UTI_NODISCARD constexpr       column_iterator  col_begin ()       noexcept { return       column_iterator( *this, typename       column_iterator::begin_tag{} ) ; }
         UTI_NODISCARD constexpr const_column_iterator  col_begin () const noexcept { return const_column_iterator( *this, typename const_column_iterator::begin_tag{} ) ; }
-        UTI_NODISCARD constexpr const_column_iterator ccol_begin () const noexcept { return const_column_iterator( *this, typename const_column_iterator::begin_tag{} ) ; }
+        UTI_NODISCARD constexpr const_column_iterator col_cbegin () const noexcept { return const_column_iterator( *this, typename const_column_iterator::begin_tag{} ) ; }
 
         UTI_NODISCARD constexpr       column_iterator  col_end ()       noexcept { return       column_iterator( *this, typename       column_iterator::end_tag{} ) ; }
         UTI_NODISCARD constexpr const_column_iterator  col_end () const noexcept { return const_column_iterator( *this, typename const_column_iterator::end_tag{} ) ; }
-        UTI_NODISCARD constexpr const_column_iterator ccol_end () const noexcept { return const_column_iterator( *this, typename const_column_iterator::end_tag{} ) ; }
+        UTI_NODISCARD constexpr const_column_iterator col_cend () const noexcept { return const_column_iterator( *this, typename const_column_iterator::end_tag{} ) ; }
 
-        UTI_NODISCARD constexpr       reverse_row_iterator  rrow_begin ()       noexcept { return       reverse_row_iterator( --row_end() ) ; }
-        UTI_NODISCARD constexpr const_reverse_row_iterator  rrow_begin () const noexcept { return const_reverse_row_iterator( --row_end() ) ; }
-        UTI_NODISCARD constexpr const_reverse_row_iterator crrow_begin () const noexcept { return const_reverse_row_iterator( --row_end() ) ; }
+        UTI_NODISCARD constexpr       reverse_row_iterator  row_rbegin ()       noexcept { return       reverse_row_iterator( --row_end() ) ; }
+        UTI_NODISCARD constexpr const_reverse_row_iterator  row_rbegin () const noexcept { return const_reverse_row_iterator( --row_end() ) ; }
+        UTI_NODISCARD constexpr const_reverse_row_iterator row_crbegin () const noexcept { return const_reverse_row_iterator( --row_end() ) ; }
 
-        UTI_NODISCARD constexpr       reverse_row_iterator  rrow_end ()       noexcept { return       reverse_row_iterator( --row_begin() ) ; }
-        UTI_NODISCARD constexpr const_reverse_row_iterator  rrow_end () const noexcept { return const_reverse_row_iterator( --row_begin() ) ; }
-        UTI_NODISCARD constexpr const_reverse_row_iterator crrow_end () const noexcept { return const_reverse_row_iterator( --row_begin() ) ; }
+        UTI_NODISCARD constexpr       reverse_row_iterator  row_rend ()       noexcept { return       reverse_row_iterator( --row_begin() ) ; }
+        UTI_NODISCARD constexpr const_reverse_row_iterator  row_rend () const noexcept { return const_reverse_row_iterator( --row_begin() ) ; }
+        UTI_NODISCARD constexpr const_reverse_row_iterator row_crend () const noexcept { return const_reverse_row_iterator( --row_begin() ) ; }
 
-        UTI_NODISCARD constexpr       reverse_column_iterator  rcol_begin ()       noexcept { return       reverse_column_iterator( --col_end() ) ; }
-        UTI_NODISCARD constexpr const_reverse_column_iterator  rcol_begin () const noexcept { return const_reverse_column_iterator( --col_end() ) ; }
-        UTI_NODISCARD constexpr const_reverse_column_iterator crcol_begin () const noexcept { return const_reverse_column_iterator( --col_end() ) ; }
+        UTI_NODISCARD constexpr       reverse_column_iterator  col_rbegin ()       noexcept { return       reverse_column_iterator( --col_end() ) ; }
+        UTI_NODISCARD constexpr const_reverse_column_iterator  col_rbegin () const noexcept { return const_reverse_column_iterator( --col_end() ) ; }
+        UTI_NODISCARD constexpr const_reverse_column_iterator col_crbegin () const noexcept { return const_reverse_column_iterator( --col_end() ) ; }
 
-        UTI_NODISCARD constexpr       reverse_column_iterator  rcol_end ()       noexcept { return       reverse_column_iterator( --col_begin() ) ; }
-        UTI_NODISCARD constexpr const_reverse_column_iterator  rcol_end () const noexcept { return const_reverse_column_iterator( --col_begin() ) ; }
-        UTI_NODISCARD constexpr const_reverse_column_iterator crcol_end () const noexcept { return const_reverse_column_iterator( --col_begin() ) ; }
+        UTI_NODISCARD constexpr       reverse_column_iterator  col_rend ()       noexcept { return       reverse_column_iterator( --col_begin() ) ; }
+        UTI_NODISCARD constexpr const_reverse_column_iterator  col_rend () const noexcept { return const_reverse_column_iterator( --col_begin() ) ; }
+        UTI_NODISCARD constexpr const_reverse_column_iterator col_crend () const noexcept { return const_reverse_column_iterator( --col_begin() ) ; }
 private:
         shape_type          shape_ {} ;
         pixel_storage_type pixels_ {} ;

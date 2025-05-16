@@ -32,6 +32,21 @@ struct generic_pixel
 
         UTI_NODISCARD constexpr value_type       & operator[] ( ssize_t _idx_ )       noexcept { return channels[ _idx_ ] ; }
         UTI_NODISCARD constexpr value_type const & operator[] ( ssize_t _idx_ ) const noexcept { return channels[ _idx_ ] ; }
+
+        template< uti::meta::arithmetic U >
+        UTI_NODISCARD constexpr operator generic_pixel< U, Channels > () const noexcept
+        {
+                generic_pixel< U, Channels > pixel ;
+                [ & ]< ssize_t... Idxs >( uti::index_sequence< Idxs... > )
+                {
+                        ( ... ,
+                        [ & ]
+                        {
+                                pixel[ Idxs ] = static_cast< U >( operator[]( Idxs ) ) ;
+                        }() ) ;
+                }( uti::make_index_sequence< dimensions >{} ) ;
+                return pixel ;
+        }
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////

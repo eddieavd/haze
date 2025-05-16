@@ -11,6 +11,7 @@
 #include <haze/geometry/meta.hxx>
 #include <haze/geometry/point.hxx>
 #include <haze/geometry/rectangle.hxx>
+#include <haze/geometry/triangle.hxx>
 
 #include <haze/object/meta.hxx>
 #include <haze/object/pixel.hxx>
@@ -46,28 +47,28 @@ public:
         }
 
         UTI_NODISCARD constexpr const_row_iterator  row_begin () const noexcept { return const_row_iterator( *this, typename const_row_iterator::begin_tag{} ) ; }
-        UTI_NODISCARD constexpr const_row_iterator crow_begin () const noexcept { return const_row_iterator( *this, typename const_row_iterator::begin_tag{} ) ; }
+        UTI_NODISCARD constexpr const_row_iterator row_cbegin () const noexcept { return const_row_iterator( *this, typename const_row_iterator::begin_tag{} ) ; }
 
         UTI_NODISCARD constexpr const_row_iterator  row_end () const noexcept { return const_row_iterator( *this, typename const_row_iterator::end_tag{} ) ; }
-        UTI_NODISCARD constexpr const_row_iterator crow_end () const noexcept { return const_row_iterator( *this, typename const_row_iterator::end_tag{} ) ; }
+        UTI_NODISCARD constexpr const_row_iterator row_cend () const noexcept { return const_row_iterator( *this, typename const_row_iterator::end_tag{} ) ; }
 
         UTI_NODISCARD constexpr const_column_iterator  col_begin () const noexcept { return const_column_iterator( *this, typename const_column_iterator::begin_tag{} ) ; }
-        UTI_NODISCARD constexpr const_column_iterator ccol_begin () const noexcept { return const_column_iterator( *this, typename const_column_iterator::begin_tag{} ) ; }
+        UTI_NODISCARD constexpr const_column_iterator col_cbegin () const noexcept { return const_column_iterator( *this, typename const_column_iterator::begin_tag{} ) ; }
 
         UTI_NODISCARD constexpr const_column_iterator  col_end () const noexcept { return const_column_iterator( *this, typename const_column_iterator::end_tag{} ) ; }
-        UTI_NODISCARD constexpr const_column_iterator ccol_end () const noexcept { return const_column_iterator( *this, typename const_column_iterator::end_tag{} ) ; }
+        UTI_NODISCARD constexpr const_column_iterator col_cend () const noexcept { return const_column_iterator( *this, typename const_column_iterator::end_tag{} ) ; }
 
-        UTI_NODISCARD constexpr const_reverse_row_iterator  rrow_begin () const noexcept { return const_reverse_row_iterator( --row_end() ) ; }
-        UTI_NODISCARD constexpr const_reverse_row_iterator crrow_begin () const noexcept { return const_reverse_row_iterator( --row_end() ) ; }
+        UTI_NODISCARD constexpr const_reverse_row_iterator  row_rbegin () const noexcept { return const_reverse_row_iterator( --row_end() ) ; }
+        UTI_NODISCARD constexpr const_reverse_row_iterator row_crbegin () const noexcept { return const_reverse_row_iterator( --row_end() ) ; }
 
-        UTI_NODISCARD constexpr const_reverse_row_iterator  rrow_end () const noexcept { return const_reverse_row_iterator( --row_begin() ) ; }
-        UTI_NODISCARD constexpr const_reverse_row_iterator crrow_end () const noexcept { return const_reverse_row_iterator( --row_begin() ) ; }
+        UTI_NODISCARD constexpr const_reverse_row_iterator  row_rend () const noexcept { return const_reverse_row_iterator( --row_begin() ) ; }
+        UTI_NODISCARD constexpr const_reverse_row_iterator row_crend () const noexcept { return const_reverse_row_iterator( --row_begin() ) ; }
 
-        UTI_NODISCARD constexpr const_reverse_column_iterator  rcol_begin () const noexcept { return const_reverse_column_iterator( --col_end() ) ; }
-        UTI_NODISCARD constexpr const_reverse_column_iterator crcol_begin () const noexcept { return const_reverse_column_iterator( --col_end() ) ; }
+        UTI_NODISCARD constexpr const_reverse_column_iterator  col_rbegin () const noexcept { return const_reverse_column_iterator( --col_end() ) ; }
+        UTI_NODISCARD constexpr const_reverse_column_iterator col_crbegin () const noexcept { return const_reverse_column_iterator( --col_end() ) ; }
 
-        UTI_NODISCARD constexpr const_reverse_column_iterator  rcol_end () const noexcept { return const_reverse_column_iterator( --col_begin() ) ; }
-        UTI_NODISCARD constexpr const_reverse_column_iterator crcol_end () const noexcept { return const_reverse_column_iterator( --col_begin() ) ; }
+        UTI_NODISCARD constexpr const_reverse_column_iterator  col_rend () const noexcept { return const_reverse_column_iterator( --col_begin() ) ; }
+        UTI_NODISCARD constexpr const_reverse_column_iterator col_crend () const noexcept { return const_reverse_column_iterator( --col_begin() ) ; }
 
         shape_type shape_ ;
         pixel_type  fill_ ;
@@ -82,17 +83,17 @@ template< meta::pixel_like PixelType > using filled_rectangle_3df = filled_shape
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template< meta::pixel_like PixelType > using filled_triangle_2d  = filled_shape< PixelType, triangle_2d  > ;
+template< meta::pixel_like PixelType > using filled_triangle_2df = filled_shape< PixelType, triangle_2df > ;
+template< meta::pixel_like PixelType > using filled_triangle_3d  = filled_shape< PixelType, triangle_3d  > ;
+template< meta::pixel_like PixelType > using filled_triangle_3df = filled_shape< PixelType, triangle_3df > ;
+
+////////////////////////////////////////////////////////////////////////////////
+
 // template< meta::pixel_like PixelType > using filled_circle_2d  = filled_shape< PixelType, circle_2d  > ;
 // template< meta::pixel_like PixelType > using filled_circle_2df = filled_shape< PixelType, circle_2df > ;
 // template< meta::pixel_like PixelType > using filled_circle_3d  = filled_shape< PixelType, circle_3d  > ;
 // template< meta::pixel_like PixelType > using filled_circle_3df = filled_shape< PixelType, circle_3df > ;
-
-////////////////////////////////////////////////////////////////////////////////
-
-// template< meta::pixel_like PixelType > using filled_triangle_2d  = filled_shape< PixelType, triangle_2d  > ;
-// template< meta::pixel_like PixelType > using filled_triangle_2df = filled_shape< PixelType, triangle_2df > ;
-// template< meta::pixel_like PixelType > using filled_triangle_3d  = filled_shape< PixelType, triangle_3d  > ;
-// template< meta::pixel_like PixelType > using filled_triangle_3df = filled_shape< PixelType, triangle_3df > ;
 
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -288,10 +288,11 @@ UTI_NODISCARD constexpr T operator/ ( T const & _time_, U _scale_ ) noexcept
 class duration
 {
 public:
+        constexpr duration (                  ) noexcept = default ;
+        constexpr duration ( double _seconds_ ) noexcept : duration( seconds( _seconds_ ) ) {}
+
         template< meta::time_like TimeType >
         constexpr duration ( TimeType const & _time_ ) noexcept : nanos_( _time_ ) {}
-
-        constexpr duration ( double _seconds_ ) noexcept : duration( seconds( _seconds_ ) ) {}
 
 ////////////////////////////////////////////////////////////////////////////////
 
