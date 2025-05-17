@@ -109,11 +109,11 @@ public:
 
         UTI_NODISCARD constexpr generic_image subimage ( shape_type _rect_ ) const UTI_NOEXCEPT_UNLESS_BADALLOC { return generic_image( subview( _rect_ ) ) ; }
 
-//      template< meta::interpolator< pixel_type > Interpolator >
+        template< meta::interpolator< pixel_type > Interpolator >
         UTI_NODISCARD constexpr generic_image scale_up ( size_type _scale_ ) const UTI_NOEXCEPT_UNLESS_BADALLOC
         {
-                auto new_width  {  width() * _scale_ } ;
-                auto new_height { height() * _scale_ } ;
+                size_type new_width  {  width() * _scale_ } ;
+                size_type new_height { height() * _scale_ } ;
 
                 generic_image scaled( new_width, new_height ) ;
 
@@ -121,7 +121,23 @@ public:
                 {
                         for( size_type j = 0; j < new_width; ++j )
                         {
-                                scaled.at( { j, i } ) = at( { j / _scale_, i / _scale_ } ) ;
+                                pixel_type top_left  = at( { j / _scale_    , i / _scale_     } ) ;
+                                pixel_type top_right = at( { j / _scale_ + 1, i / _scale_     } ) ;
+                                pixel_type bot_left  = at( { j / _scale_    , i / _scale_ + 1 } ) ;
+                                pixel_type bot_right = at( { j / _scale_ + 1, i / _scale_ + 1 } ) ;
+
+                                double dx = static_cast< double >( j ) / static_cast< double >( _scale_ ) -
+                                            static_cast<  i64_t >( j ) / static_cast<  i64_t >( _scale_ ) ;
+
+                                double dy = static_cast< double >( i ) / static_cast< double >( _scale_ ) -
+                                            static_cast<  i64_t >( i ) / static_cast<  i64_t >( _scale_ ) ;
+
+                                pixel_type top { Interpolator::template operator()< pixel_type >( top_left, top_right, 1.0, dx ) } ;
+                                pixel_type bot { Interpolator::template operator()< pixel_type >( bot_left, bot_right, 1.0, dx ) } ;
+
+                                pixel_type pix { Interpolator::template operator()< pixel_type >( top, bot, 1.0, dy ) } ;
+
+                                scaled.at( { j, i } ) = pix ;
                         }
                 }
                 return scaled ;

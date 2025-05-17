@@ -63,7 +63,8 @@ public:
         using   pointer = value_type * ;
         using reference = value_type & ;
 
-        constexpr image_view ( image_reference _image_, shape_type _view_ ) noexcept : view_( _view_ ), image_( _image_ ) {}
+        constexpr image_view (                                            ) noexcept = default ;
+        constexpr image_view ( image_reference _image_, shape_type _view_ ) noexcept : view_( _view_ ), image_( &_image_ ) {}
 
         UTI_NODISCARD constexpr ssize_t channels () const noexcept { return pixel_type::num_channels ; }
 
@@ -71,8 +72,8 @@ public:
         UTI_NODISCARD constexpr size_type  width () const noexcept { return view_. width() ; }
         UTI_NODISCARD constexpr size_type height () const noexcept { return view_.height() ; }
 
-        UTI_NODISCARD constexpr pixel_type       & at ( point_type _point_ )       noexcept { return image_.at( _point_ + view_.begin_point() ) ; }
-        UTI_NODISCARD constexpr pixel_type const & at ( point_type _point_ ) const noexcept { return image_.at( _point_ + view_.begin_point() ) ; }
+        UTI_NODISCARD constexpr pixel_type       & at ( point_type _point_ )       noexcept { return image_->at( _point_ + view_.begin_point() ) ; }
+        UTI_NODISCARD constexpr pixel_type const & at ( point_type _point_ ) const noexcept { return image_->at( _point_ + view_.begin_point() ) ; }
 
         UTI_NODISCARD constexpr image_view subview ( shape_type _rect_ ) const noexcept ;
 
@@ -108,8 +109,8 @@ public:
         UTI_NODISCARD constexpr const_reverse_column_iterator  col_rend () const noexcept { return const_reverse_column_iterator( --col_begin() ) ; }
         UTI_NODISCARD constexpr const_reverse_column_iterator col_crend () const noexcept { return const_reverse_column_iterator( --col_begin() ) ; }
 private:
-        shape_type       view_ ;
-        image_reference image_ ;
+        shape_type     view_ ;
+        image_pointer image_ ;
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////

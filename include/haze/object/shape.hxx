@@ -46,6 +46,9 @@ public:
                 return shape_.contains( _point_ + shape_.bounding_box().begin_point() ) ? fill_ : pixel_type{} ;
         }
 
+        UTI_NODISCARD constexpr pixel_type       & fill ()       noexcept { return fill_ ; }
+        UTI_NODISCARD constexpr pixel_type const & fill () const noexcept { return fill_ ; }
+
         UTI_NODISCARD constexpr const_row_iterator  row_begin () const noexcept { return const_row_iterator( *this, typename const_row_iterator::begin_tag{} ) ; }
         UTI_NODISCARD constexpr const_row_iterator row_cbegin () const noexcept { return const_row_iterator( *this, typename const_row_iterator::begin_tag{} ) ; }
 

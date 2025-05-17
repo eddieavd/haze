@@ -18,11 +18,11 @@ namespace haze::meta
 template< typename PointType >
 concept point_like = requires( PointType point )
 {
-        typename PointType::coordinate_type ;
+//      typename PointType::coordinate_type ;
         typename PointType::     value_type ;
 
         { PointType::dimensions } ;
-        { point.x() } ;
+//      { point.x() } ;
         { point[ ssize_t{} ] } ;
 } ;
 
