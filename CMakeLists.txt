@@ -27,7 +27,7 @@ if( CMAKE_BUILD_TYPE OR CMAKE_CONFIGURATION_TYPES )
 endif()
 
 add_subdirectory(  include )
-add_subdirectory( examples )
+#add_subdirectory( examples )
 
 if( HAZE_TEST )
         add_subdirectory( test )
