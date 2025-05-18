@@ -11,7 +11,7 @@ project( haze
          LANGUAGES    CXX
 )
 
-set( HAZE_COMPILE_OPTIONS -Wall -Wextra -pedantic -Werror
+set( HAZE_COMPILE_OPTIONS -Wall -Wextra -pedantic
                           -ftemplate-backtrace-limit=0
                           -fconstexpr-backtrace-limit=0
                           -fno-exceptions -fno-rtti
@@ -26,7 +26,8 @@ if( CMAKE_BUILD_TYPE OR CMAKE_CONFIGURATION_TYPES )
         )
 endif()
 
-add_subdirectory( source )
+add_subdirectory(  include )
+add_subdirectory( examples )
 
 if( HAZE_TEST )
         add_subdirectory( test )

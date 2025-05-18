@@ -7,20 +7,20 @@
 #pragma once
 
 #include <haze/common/types.hxx>
-#include <haze/image/pixel.hxx>
+#include <haze/object/pixel.hxx>
 
 #include <uti/core/container/vector.hxx>
 #include <uti/core/string/string_view.hxx>
 
 UTI_DIAGS_PUSH()
 UTI_DIAGS_DISABLE( -Wdeprecated-declarations )
-#ifndef STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_IMPLEMENTATION
-#endif
+//#ifndef STB_IMAGE_IMPLEMENTATION
+//#define STB_IMAGE_IMPLEMENTATION
+//#endif
 #include <stb/stb_image.h>
-#ifndef STB_IMAGE_WRITE_IMPLEMENTATION
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#endif
+//#ifndef STB_IMAGE_WRITE_IMPLEMENTATION
+//#define STB_IMAGE_WRITE_IMPLEMENTATION
+//#endif
 #include <stb/stb_image_write.h>
 UTI_DIAGS_POP()
 

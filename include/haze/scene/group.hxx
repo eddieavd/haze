@@ -1,15 +1,16 @@
 //
 //
 //      haze
-//      geo/shape.hxx
+//      scene/group.hxx
 //
 
 #pragma once
 
+#include <haze/scene/meta.hxx>
+
 
 namespace haze
 {
-
 
 
 
