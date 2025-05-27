@@ -6,8 +6,8 @@
 
 #pragma once
 
-#include <haze/common/types.hxx>
-#include <haze/object/pixel.hxx>
+#include <haze/core/common/types.hxx>
+#include <haze/core/object/pixel.hxx>
 
 #include <uti/core/container/vector.hxx>
 #include <uti/core/string/string_view.hxx>
