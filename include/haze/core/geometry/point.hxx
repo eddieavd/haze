@@ -8,7 +8,6 @@
 
 #include <haze/core/common/types.hxx>
 
-#include <numeric>
 #include <cmath>
 
 
@@ -53,6 +52,24 @@ struct generic_point_nd
                 }() ;
         }
 
+        template< typename U, ssize_t D1 >
+                requires( D != D1 )
+        constexpr operator generic_point_nd< U, D1 > () const noexcept
+        {
+                if constexpr( D < D1 )
+                {
+                        generic_point_nd< U, D1 > point {} ;
+                        for_each( [ & ]( ssize_t idx, auto & other ){ other.coords[ idx ] = coords[ idx ] ; }, point ) ;
+                        return point ;
+                }
+                else
+                {
+                        generic_point_nd< U, D1 > point {} ;
+                        point.for_each( [ & ]( ssize_t idx ){ point.coords[ idx ] = coords[ idx ] ; } ) ;
+                        return point ;
+                }
+        }
+
         UTI_NODISCARD constexpr coordinate_type       & operator[] ( ssize_t _idx_ )       noexcept { return coords[ _idx_ ] ; }
         UTI_NODISCARD constexpr coordinate_type const & operator[] ( ssize_t _idx_ ) const noexcept { return coords[ _idx_ ] ; }
 
@@ -66,11 +83,17 @@ struct generic_point_nd
         UTI_NODISCARD constexpr coordinate_type const & z () const noexcept requires( dimensions >= 3 ) { return coords[ 2 ] ; }
         UTI_NODISCARD constexpr coordinate_type const & w () const noexcept requires( dimensions >= 4 ) { return coords[ 3 ] ; }
 
+        UTI_NODISCARD constexpr coordinate_type y () const noexcept requires( dimensions < 2 ) { return 0 ; }
+        UTI_NODISCARD constexpr coordinate_type z () const noexcept requires( dimensions < 3 ) { return 0 ; }
+        UTI_NODISCARD constexpr coordinate_type w () const noexcept requires( dimensions < 4 ) { return 0 ; }
+
         UTI_NODISCARD constexpr coordinate_type & col () noexcept                             { return x() ; }
         UTI_NODISCARD constexpr coordinate_type & row () noexcept requires( dimensions >= 2 ) { return y() ; }
 
         UTI_NODISCARD constexpr coordinate_type const & col () const noexcept                             { return x() ; }
         UTI_NODISCARD constexpr coordinate_type const & row () const noexcept requires( dimensions >= 2 ) { return y() ; }
+
+        UTI_NODISCARD constexpr coordinate_type row () const noexcept requires( dimensions < 2 ) { return y() ; }
 
         template< typename Self, typename Callable, typename... Args >
                 requires( uti::meta::invocable< Callable, ssize_t, Args&&... > &&
@@ -89,30 +112,6 @@ struct generic_point_nd
 
 ////////////////////////////////////////////////////////////////////////////////
 
-        UTI_NODISCARD constexpr value_type distance ( generic_point_nd const & _other_ ) const noexcept
-        {
-                if constexpr( dimensions == 1 )
-                {
-                        return _other_.x() - x() ;
-                }
-                else
-                {
-                        value_type diff {} ;
-                        for_each(
-                        [ & ]( ssize_t idx, auto const & other )
-                        {
-                                auto diff_i { other.coords[ idx ] - coords[ idx ] } ;
-                                diff_i *= diff_i ;
-                                diff += diff_i ;
-                        },
-                        _other_ ) ;
-
-                        return std::sqrt( diff ) ;
-                }
-        }
-
-////////////////////////////////////////////////////////////////////////////////
-
         UTI_NODISCARD constexpr value_type distance_sqrd ( generic_point_nd const & _other_ ) const noexcept
         {
                 value_type diff {} ;
@@ -126,6 +125,11 @@ struct generic_point_nd
                 _other_ ) ;
 
                 return diff ;
+        }
+
+        UTI_NODISCARD constexpr value_type distance ( generic_point_nd const & _other_ ) const noexcept
+        {
+                return std::sqrt( distance_sqrt( _other_ ) ) ;
         }
 
 ////////////////////////////////////////////////////////////////////////////////

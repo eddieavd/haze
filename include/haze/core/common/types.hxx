@@ -6,6 +6,9 @@
 
 #pragma once
 
+#include <haze/core/common/config.hxx>
+#include <haze/core/common/log.hxx>
+
 #include <uti/core/allocator/meta.hxx>
 #include <uti/core/allocator/default.hxx>
 #include <uti/core/allocator/new.hxx>

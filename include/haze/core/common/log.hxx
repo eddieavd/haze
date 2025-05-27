@@ -4,7 +4,7 @@
 //      core/common/log.hxx
 //
 
-#include <haze/core/common/types.hxx>
+#pragma once
 
 #include <loguru.hpp>
 

@@ -32,6 +32,15 @@ struct generic_triangle
         point_type b_ ;
         point_type c_ ;
 
+        template< meta::point_like OtherPointType >
+                requires( dimensions == OtherPointType::dimensions &&
+                         !uti::meta::same_as< value_type, typename OtherPointType::value_type >
+                )
+        constexpr operator generic_triangle< OtherPointType > () noexcept
+        {
+                return generic_triangle< OtherPointType >{ a_, b_, c_ } ;
+        }
+
         UTI_NODISCARD constexpr bool contains ( point_type _point_ ) const noexcept
         {
                 double d1 { sign( _point_, a_, b_ ) } ;

@@ -30,6 +30,15 @@ struct generic_rectangle
         point_type begin_ ;
         point_type   end_ ;
 
+        template< meta::point_like OtherPointType >
+                requires( dimensions == OtherPointType::dimensions &&
+                         !uti::meta::same_as< value_type, typename OtherPointType::value_type >
+                )
+        constexpr operator generic_rectangle< OtherPointType > () noexcept
+        {
+                return generic_rectangle< OtherPointType >{ begin_, end_ } ;
+        }
+
         UTI_NODISCARD constexpr point_type       & begin_point ()       noexcept { return begin_ ; }
         UTI_NODISCARD constexpr point_type const & begin_point () const noexcept { return begin_ ; }
         UTI_NODISCARD constexpr point_type       &   end_point ()       noexcept { return   end_ ; }

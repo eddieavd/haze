@@ -17,26 +17,31 @@ namespace haze
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template< meta::pixel_like PixelType > constexpr image< PixelType > load_image ( string_view _filename_                                     ) noexcept ;
-template< meta::pixel_like PixelType > constexpr void              store_image ( string_view _filename_, image< PixelType > const & _image_ ) noexcept ;
+template< meta::image_like ImageType > constexpr ImageType load_image ( string_view _filename_                            ) noexcept ;
+template< meta::image_like ImageType > constexpr void     store_image ( string_view _filename_, ImageType const & _image_ ) noexcept ;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-template< meta::pixel_like PixelType > constexpr image< PixelType > load_image ( string_view _filename_ ) noexcept
+template< meta::image_like ImageType > constexpr ImageType load_image ( string_view _filename_ ) noexcept
 {
         ssize_t  width ;
         ssize_t height ;
-        auto    pixels = stb::load_image< PixelType >( _filename_, width, height ) ;
+        auto    pixels = stb::load_image< typename ImageType::pixel_type >( _filename_, width, height ) ;
 
-        return image< PixelType >( UTI_MOVE( pixels ), width, height ) ;
+        typename ImageType::shape_type shape {} ;
+
+        shape.end_point().x() =  width ;
+        shape.end_point().y() = height ;
+
+        return ImageType( UTI_MOVE( pixels ), shape ) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template< meta::pixel_like PixelType > constexpr void store_image ( string_view _filename_, image< PixelType > const & _image_ ) noexcept
+template< meta::image_like ImageType > constexpr void store_image ( string_view _filename_, ImageType const & _image_ ) noexcept
 {
-        stb::write_to_png( _filename_, _image_.pixels(), _image_.width(), _image_.height() ) ;
+        stb::write_to_png< typename ImageType::pixel_type >( _filename_, _image_.pixels(), _image_.width(), _image_.height() ) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

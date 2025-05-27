@@ -57,27 +57,19 @@ public:
         static constexpr ssize_t       dimensions { point_type::      dimensions } ;
         static constexpr ssize_t shape_dimensions { shape_type::shape_dimensions } ;
 
-        constexpr generic_image (                    size_type _width_, size_type _height_ ) UTI_NOEXCEPT_UNLESS_BADALLOC : shape_{ {}, { _width_, _height_ } }, pixels_( _width_ * _height_, pixel_type{} ) {}
-        constexpr generic_image ( pixel_type _fill_, size_type _width_, size_type _height_ ) UTI_NOEXCEPT_UNLESS_BADALLOC : shape_{ {}, { _width_, _height_ } }, pixels_( _width_ * _height_,       _fill_ ) {}
-
         constexpr generic_image (                    shape_type _shape_ ) UTI_NOEXCEPT_UNLESS_BADALLOC : shape_{ _shape_ }, pixels_( shape_.width() * shape_.height(), pixel_type{} ) {}
         constexpr generic_image ( pixel_type _fill_, shape_type _shape_ ) UTI_NOEXCEPT_UNLESS_BADALLOC : shape_{ _shape_ }, pixels_( shape_.width() * shape_.height(),       _fill_ ) {}
 
         template< meta::image_like ImageType >
         constexpr generic_image ( ImageType const & _other_ ) UTI_NOEXCEPT_UNLESS_BADALLOC
-                : shape_( _other_.shape().normalized() ), pixels_( _other_.width() * _other_.height() )
+                : shape_ { _other_.shape().normalized().begin_, _other_.shape().normalized().end_ }
+                , pixels_( _other_.width() * _other_.height() )
         {
                 for( auto iter = _other_.row_begin(); iter < _other_.row_end(); ++iter )
                 {
                         pixels_.push_back( *iter ) ;
                 }
         }
-
-        constexpr generic_image ( pixel_storage_type const & _pixels_, size_type _width_, size_type _height_ ) UTI_NOEXCEPT_UNLESS_BADALLOC
-                : shape_{ {}, { _width_, _height_ } }, pixels_( _pixels_ ) {}
-
-        constexpr generic_image ( pixel_storage_type && _pixels_, size_type _width_, size_type _height_ ) noexcept
-                : shape_{ {}, { _width_, _height_ } }, pixels_( UTI_MOVE( _pixels_ ) ) {}
 
         constexpr generic_image ( pixel_storage_type const & _pixels_, shape_type _shape_ ) UTI_NOEXCEPT_UNLESS_BADALLOC
                 : shape_{ _shape_ }, pixels_( _pixels_ ) {}
@@ -115,7 +107,11 @@ public:
                 size_type new_width  {  width() * _scale_ } ;
                 size_type new_height { height() * _scale_ } ;
 
-                generic_image scaled( new_width, new_height ) ;
+                shape_type new_shape {} ;
+                new_shape.end_point().x() =  new_width ;
+                new_shape.end_point().y() = new_height ;
+
+                generic_image scaled( new_shape ) ;
 
                 for( size_type i = 0; i < new_height; ++i )
                 {
@@ -188,10 +184,10 @@ template< meta::pixel_like PixelType > using image_3df = generic_image< PixelTyp
 
 template< meta::pixel_like PixelType > using image = image_2d< PixelType > ;
 
-using mono_image = image< mono_pixel > ;
-using  rgb_image = image<  rgb_pixel > ;
-using rgba_image = image< rgba_pixel > ;
-using bgra_image = image< bgra_pixel > ;
+using mono_image = image< mono_u8_pixel > ;
+using  rgb_image = image<  rgb_u8_pixel > ;
+using rgba_image = image< rgba_u8_pixel > ;
+using bgra_image = image< bgra_u8_pixel > ;
 
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -31,6 +31,15 @@ struct generic_line
         point_type begin_ ;
         point_type   end_ ;
 
+        template< meta::point_like OtherPointType >
+                requires( dimensions == OtherPointType::dimensions &&
+                         !uti::meta::same_as< value_type, typename OtherPointType::value_type >
+                )
+        constexpr operator generic_line< OtherPointType > () noexcept
+        {
+                return generic_line< OtherPointType >{ begin_, end_ } ;
+        }
+
         UTI_NODISCARD constexpr point_type       & begin_point ()       noexcept { return begin_ ; }
         UTI_NODISCARD constexpr point_type const & begin_point () const noexcept { return begin_ ; }
         UTI_NODISCARD constexpr point_type       &   end_point ()       noexcept { return   end_ ; }
@@ -56,7 +65,7 @@ struct generic_line
         {
                 if( _point_ == begin_ || _point_ == end_ ) return true ;
 
-                value_type dist_diff = begin_.distance( _point_ ) + end_.distance( _point_ ) - begin_.distance( end_ ) ;
+                value_type dist_diff = begin_.distance_sqrd( _point_ ) + end_.distance_sqrd( _point_ ) - begin_.distance_sqrd( end_ ) ;
                 return dist_diff == value_type( 0 ) ;
         }
 

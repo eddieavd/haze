@@ -31,9 +31,19 @@ struct generic_circle
         point_type      center_ ;
         coordinate_type radius_ ;
 
+        template< meta::point_like OtherPointType >
+                requires( dimensions == OtherPointType::dimensions &&
+                         !uti::meta::same_as< value_type, typename OtherPointType::value_type >
+                )
+        constexpr operator generic_circle< OtherPointType > () noexcept
+        {
+                return generic_circle< OtherPointType >{ center_, static_cast< typename OtherPointType::coordinate_type >( radius_ ) } ;
+        }
+
+
         UTI_NODISCARD constexpr bool contains ( point_type _point_ ) const noexcept
         {
-                return _point_.distance( center_ ) <= radius_ ;
+                return _point_.distance_sqrd( center_ ) <= ( radius_ * radius_ ) ;
         }
 
         UTI_NODISCARD constexpr rectangle_type bounding_box () const noexcept

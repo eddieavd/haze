@@ -22,11 +22,51 @@ namespace haze
 
 enum class pixel_format
 {
-        NONE = 0 ,
-        R8       ,
-        RGB8     ,
-        RGBA8    ,
+        Ru8  = 0 ,
+        RGBu8    ,
+        RGBAu8   ,
+        BGRAu8   ,
+
+        Ri8      ,
+        RGBi8    ,
+        RGBAi8   ,
+        BGRAi8   ,
+
+        Ri16     ,
+        RGBi16   ,
+        RGBAi16  ,
+        BGRAi16  ,
+
+        Ru16     ,
+        RGBu16   ,
+        RGBAu16  ,
+        BGRAu16  ,
+
+        Ri32     ,
+        RGBi32   ,
+        RGBAi32  ,
+        BGRAi32  ,
+
+        Ru32     ,
+        RGBu32   ,
+        RGBAu32  ,
+        BGRAu32  ,
+
+        Ri64     ,
+        RGBi64   ,
+        RGBAi64  ,
+        BGRAi64  ,
+
+        Ru64     ,
+        RGBu64   ,
+        RGBAu64  ,
+        BGRAu64  ,
+
+        R32F     ,
+        RGB32F   ,
         RGBA32F  ,
+        BGRA32F  ,
+        COUNT    ,
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -69,24 +109,66 @@ template< uti::meta::arithmetic T > struct  bgra_generic_pixel : public generic_
 
 ////////////////////////////////////////////////////////////////////////////////
 
-using mono_pixel = mono_generic_pixel< u8_t > ;
-using  rgb_pixel =  rgb_generic_pixel< u8_t > ;
-using rgba_pixel = rgba_generic_pixel< u8_t > ;
-using bgra_pixel = bgra_generic_pixel< u8_t > ;
+struct mono_u8_pixel : public mono_generic_pixel< u8_t > { static constexpr pixel_format format { pixel_format::   Ru8 } ; } ;
+struct  rgb_u8_pixel : public  rgb_generic_pixel< u8_t > { static constexpr pixel_format format { pixel_format:: RGBu8 } ; } ;
+struct rgba_u8_pixel : public rgba_generic_pixel< u8_t > { static constexpr pixel_format format { pixel_format::RGBAu8 } ; } ;
+struct bgra_u8_pixel : public bgra_generic_pixel< u8_t > { static constexpr pixel_format format { pixel_format::BGRAu8 } ; } ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-using mono_fpixel = mono_generic_pixel< float > ;
-using  rgb_fpixel =  rgb_generic_pixel< float > ;
-using rgba_fpixel = rgba_generic_pixel< float > ;
-using bgra_fpixel = bgra_generic_pixel< float > ;
+struct mono_i8_pixel : public mono_generic_pixel< i8_t > { static constexpr pixel_format format { pixel_format::   Ri8 } ; } ;
+struct  rgb_i8_pixel : public  rgb_generic_pixel< i8_t > { static constexpr pixel_format format { pixel_format:: RGBi8 } ; } ;
+struct rgba_i8_pixel : public rgba_generic_pixel< i8_t > { static constexpr pixel_format format { pixel_format::RGBAi8 } ; } ;
+struct bgra_i8_pixel : public bgra_generic_pixel< i8_t > { static constexpr pixel_format format { pixel_format::BGRAi8 } ; } ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-using mono_thicc_pixel = mono_generic_pixel< i64_t > ;
-using  rgb_thicc_pixel =  rgb_generic_pixel< i64_t > ;
-using rgba_thicc_pixel = rgba_generic_pixel< i64_t > ;
-using bgra_thicc_pixel = bgra_generic_pixel< i64_t > ;
+struct mono_u16_pixel : public mono_generic_pixel< u16_t > { static constexpr pixel_format format { pixel_format::   Ru16 } ; } ;
+struct  rgb_u16_pixel : public  rgb_generic_pixel< u16_t > { static constexpr pixel_format format { pixel_format:: RGBu16 } ; } ;
+struct rgba_u16_pixel : public rgba_generic_pixel< u16_t > { static constexpr pixel_format format { pixel_format::RGBAu16 } ; } ;
+struct bgra_u16_pixel : public bgra_generic_pixel< u16_t > { static constexpr pixel_format format { pixel_format::BGRAu16 } ; } ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct mono_i16_pixel : public mono_generic_pixel< i16_t > { static constexpr pixel_format format { pixel_format::   Ri16 } ; } ;
+struct  rgb_i16_pixel : public  rgb_generic_pixel< i16_t > { static constexpr pixel_format format { pixel_format:: RGBi16 } ; } ;
+struct rgba_i16_pixel : public rgba_generic_pixel< i16_t > { static constexpr pixel_format format { pixel_format::RGBAi16 } ; } ;
+struct bgra_i16_pixel : public bgra_generic_pixel< i16_t > { static constexpr pixel_format format { pixel_format::BGRAi16 } ; } ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct mono_u32_pixel : public mono_generic_pixel< u32_t > { static constexpr pixel_format format { pixel_format::   Ru32 } ; } ;
+struct  rgb_u32_pixel : public  rgb_generic_pixel< u32_t > { static constexpr pixel_format format { pixel_format:: RGBu32 } ; } ;
+struct rgba_u32_pixel : public rgba_generic_pixel< u32_t > { static constexpr pixel_format format { pixel_format::RGBAu32 } ; } ;
+struct bgra_u32_pixel : public bgra_generic_pixel< u32_t > { static constexpr pixel_format format { pixel_format::BGRAu32 } ; } ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct mono_i32_pixel : public mono_generic_pixel< i32_t > { static constexpr pixel_format format { pixel_format::   Ri32 } ; } ;
+struct  rgb_i32_pixel : public  rgb_generic_pixel< i32_t > { static constexpr pixel_format format { pixel_format:: RGBi32 } ; } ;
+struct rgba_i32_pixel : public rgba_generic_pixel< i32_t > { static constexpr pixel_format format { pixel_format::RGBAi32 } ; } ;
+struct bgra_i32_pixel : public bgra_generic_pixel< i32_t > { static constexpr pixel_format format { pixel_format::BGRAi32 } ; } ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct mono_u64_pixel : public mono_generic_pixel< u64_t > { static constexpr pixel_format format { pixel_format::   Ru64 } ; } ;
+struct  rgb_u64_pixel : public  rgb_generic_pixel< u64_t > { static constexpr pixel_format format { pixel_format:: RGBu64 } ; } ;
+struct rgba_u64_pixel : public rgba_generic_pixel< u64_t > { static constexpr pixel_format format { pixel_format::RGBAu64 } ; } ;
+struct bgra_u64_pixel : public bgra_generic_pixel< u64_t > { static constexpr pixel_format format { pixel_format::BGRAu64 } ; } ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct mono_i64_pixel : public mono_generic_pixel< i64_t > { static constexpr pixel_format format { pixel_format::   Ri64 } ; } ;
+struct  rgb_i64_pixel : public  rgb_generic_pixel< i64_t > { static constexpr pixel_format format { pixel_format:: RGBi64 } ; } ;
+struct rgba_i64_pixel : public rgba_generic_pixel< i64_t > { static constexpr pixel_format format { pixel_format::RGBAi64 } ; } ;
+struct bgra_i64_pixel : public bgra_generic_pixel< i64_t > { static constexpr pixel_format format { pixel_format::BGRAi64 } ; } ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct mono_f_pixel : public mono_generic_pixel< float > { static constexpr pixel_format format { pixel_format::   R32F } ; } ;
+struct  rgb_f_pixel : public  rgb_generic_pixel< float > { static constexpr pixel_format format { pixel_format:: RGB32F } ; } ;
+struct rgba_f_pixel : public rgba_generic_pixel< float > { static constexpr pixel_format format { pixel_format::RGBA32F } ; } ;
+struct bgra_f_pixel : public bgra_generic_pixel< float > { static constexpr pixel_format format { pixel_format::BGRA32F } ; } ;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
