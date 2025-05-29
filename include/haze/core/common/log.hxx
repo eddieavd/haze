@@ -49,7 +49,7 @@ namespace haze::log
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static inline void init ( int & argc, char ** argv ) noexcept
+static constexpr void init ( int & argc, char ** argv ) noexcept
 {
         loguru::g_stderr_verbosity = loguru::Verbosity_1 ;
 

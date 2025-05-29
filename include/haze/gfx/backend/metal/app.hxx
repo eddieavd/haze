@@ -45,7 +45,7 @@ class app : public app_base< app >
                 constexpr view_delegate ( context & _ctx_ )          ;
                 virtual  ~view_delegate (                 ) override ;
 
-                constexpr void set_on_update ( std::function< void( layer &, MTL::RenderCommandEncoder * ) > const & _update_ ) noexcept { update_ = _update_ ; }
+                constexpr void set_on_update ( std::function< void( layer & ) > const & _update_ ) noexcept { update_ = _update_ ; }
 
                 virtual void drawInMTKView ( MTK::View * _view_ ) override ;
 
@@ -54,7 +54,7 @@ class app : public app_base< app >
                 renderer renderer_ ;
                 layer       layer_ ;
 
-                std::function< void( layer &, MTL::RenderCommandEncoder * ) > update_ ;
+                std::function< void( layer & ) > update_ ;
         } ;
 
         class app_delegate : public NS::ApplicationDelegate
@@ -66,7 +66,7 @@ class app : public app_base< app >
 
                 ~app_delegate () noexcept ;
 
-                constexpr void set_on_update ( std::function< void( layer &, MTL::RenderCommandEncoder * ) > const & _update_ ) noexcept { update_ = _update_ ; }
+                constexpr void set_on_update ( std::function< void( layer & ) > const & _update_ ) noexcept { update_ = _update_ ; }
 
                 virtual void applicationWillFinishLaunching                  ( NS::Notification * _notification_ ) override ;
                 virtual void applicationDidFinishLaunching                   ( NS::Notification * _notification_ ) override ;
@@ -74,14 +74,14 @@ class app : public app_base< app >
 
                 constexpr void on_terminate () noexcept
                 {
-                        HAZE_CORE_DBG( "app::app_delegate::on_terminate : releasing view delegate..." ) ;
-                        view_dlgt_->release() ;
+//                      HAZE_CORE_WARN( "app::app_delegate::on_terminate : taking a leak" ) ;
+
                         HAZE_CORE_DBG( "app::app_delegate::on_terminate : releasing view..." ) ;
-                        view_     ->release() ;
+                        view_->release() ;
 //                      HAZE_CORE_DBG( "app::app_delegate::on_terminate : releasing window..." ) ;
-//                      window_    .release() ;
+//                      window_.release() ;
                         HAZE_CORE_DBG( "app::app_delegate::on_terminate : releasing context..." ) ;
-                        ctx_       .release() ;
+                        ctx_.release() ;
 
                         HAZE_CORE_DBG( "app::app_delegate::on_terminate : deleting view delegate..." ) ;
                         delete view_dlgt_ ;
@@ -92,7 +92,7 @@ class app : public app_base< app >
                 MTK::    View *      view_ {} ;
                 view_delegate * view_dlgt_ {} ;
 
-                std::function< void( layer &, MTL::RenderCommandEncoder * ) > update_ ;
+                std::function< void( layer & ) > update_ ;
 
                 NS::Menu * _create_menu_bar () ;
         } ;
@@ -103,7 +103,7 @@ public:
         constexpr  app () noexcept ;
         constexpr ~app () noexcept ;
 
-        constexpr void on_update ( auto&& _update_fn_ ) noexcept
+        constexpr void on_update ( std::function< void( layer & ) > const & _update_fn_ ) noexcept
         { app_delegate_.set_on_update( UTI_FWD( _update_fn_ ) ) ; }
 
         constexpr window       & get_window ()       noexcept { return app_delegate_.window_ ; }
@@ -130,6 +130,7 @@ constexpr app::view_delegate::view_delegate ( context & _ctx_ )
 
 inline app::view_delegate::~view_delegate () noexcept
 {
+        release() ;
         HAZE_CORE_DBG( "app::view_delegate : destroyed" ) ;
 }
 
@@ -141,18 +142,25 @@ inline void app::view_delegate::drawInMTKView ( MTK::View * _view_ )
                 renderer_.init() ;
                 return true ;
         }() ;
+
         HAZE_CORE_YAP_S( "app::view_delegate::drawInMTKView : system requested redraw" ) ;
 
-        renderer_.draw( layer_, update_, _view_ ) ;
+        HAZE_CORE_YAP_S( "app::view_delegate::drawInMTKView : calling on_update handler..." ) ;
+        update_( layer_ ) ;
+        HAZE_CORE_YAP_S( "app::view_delegate::drawInMTKView : on_update finished" ) ;
+
+        HAZE_CORE_YAP_S( "app::view_delegate::drawInMTKView : invoking renderer..." ) ;
+        renderer_.draw( layer_, _view_ ) ;
+        HAZE_CORE_YAP_S( "app::view_delegate::drawInMTKView : finished" ) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 inline app::app_delegate::~app_delegate () noexcept
 {
+        if( view_ ) view_ ->release() ;
         window_.release() ;
-        view_ ->release() ;
-        delete view_dlgt_ ;
+        if( view_dlgt_ ) delete view_dlgt_ ;
 
         HAZE_CORE_DBG( "app::app_delegate : destroyed" ) ;
 }
@@ -200,10 +208,10 @@ inline NS::Menu * app::app_delegate::_create_menu_bar ()
         main_menu->addItem(    app_menu_item ) ;
         main_menu->addItem( window_menu_item ) ;
 
-        app_menu_item->release() ;
+        app_menu_item   ->release() ;
         window_menu_item->release() ;
-        app_menu->release() ;
-        window_menu->release() ;
+        app_menu        ->release() ;
+        window_menu     ->release() ;
 
         HAZE_CORE_DBG( "app::app_delegate::_create_menu_bar : finished" ) ;
 

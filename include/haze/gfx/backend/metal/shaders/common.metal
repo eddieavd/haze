@@ -1,0 +1,32 @@
+//
+//
+//      haze
+//      gfx/backend/metal/shaders/common.metal
+//
+
+#pragma once
+
+
+namespace haze::mtl
+{
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct v2f
+{
+        float4 position [[ position ]] ;
+         half4    color                ;
+} ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct vertex_data
+{
+        device float3 * positions [[ id( 0 ) ]] ;
+        device float4 *    colors [[ id( 1 ) ]] ;
+} ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+} // namespace haze::mtl

@@ -50,9 +50,10 @@ FetchContent_MakeAvailable( loguru )
 
 target_link_libraries( haze INTERFACE
         uti_core::uti_core
-        uti_sys::uti_sys
         loguru::loguru
 )
+
+target_compile_options( haze INTERFACE -fno-objc-arc )
 
 target_link_libraries( haze INTERFACE "-framework Cocoa"        )
 target_link_libraries( haze INTERFACE "-framework Foundation"   )
@@ -61,5 +62,3 @@ target_link_libraries( haze INTERFACE "-framework QuartzCore"   )
 target_link_libraries( haze INTERFACE "-framework Metal"        )
 target_link_libraries( haze INTERFACE "-framework MetalKit"     )
 target_link_libraries( haze INTERFACE "-framework OpenGL"       )
-
-target_compile_options( haze INTERFACE -fno-objc-arc )

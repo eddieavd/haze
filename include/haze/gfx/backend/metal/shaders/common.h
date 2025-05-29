@@ -1,0 +1,35 @@
+//
+//
+//      haze
+//      gfx/backend/metal/shaders/common.h
+//
+
+#pragma once
+
+#include <simd/simd.h>
+
+
+namespace haze::mtl
+{
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct v2f
+{
+        simd::float4 position ;
+        simd:: half3    color ;
+} ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct vertex_data
+{
+        simd::float3 * positions ;
+        simd::float3 *    colors ;
+} ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+} // namespace haze::mtl

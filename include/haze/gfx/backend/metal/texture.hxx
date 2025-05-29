@@ -36,6 +36,11 @@ public:
         constexpr generic_texture (                          ) noexcept = default ;
         constexpr generic_texture ( MTL::Texture * _texture_ ) noexcept : texture_{ _texture_ } {}
 
+        constexpr generic_texture             ( generic_texture const &  _other_ ) noexcept :              texture_ ( _other_.texture_ ) {                            ; texture_->retain() ;                }
+        constexpr generic_texture             ( generic_texture       && _other_ ) noexcept :              texture_ ( _other_.texture_ ) { _other_.texture_ = nullptr ;                    ;                }
+        constexpr generic_texture & operator= ( generic_texture const &  _other_ ) noexcept { _release() ; texture_ = _other_.texture_ ;                              ; texture_->retain() ; return *this ; }
+        constexpr generic_texture & operator= ( generic_texture       && _other_ ) noexcept { _release() ; texture_ = _other_.texture_ ;   _other_.texture_ = nullptr ;                    ; return *this ; }
+
         constexpr ~generic_texture () noexcept { _release() ; }
 private:
         MTL::Texture * texture_ {} ;
@@ -47,7 +52,7 @@ private:
         constexpr void         _upload ( image_type const & _image_ )       noexcept ;
         constexpr image_type _download (                            ) const noexcept ;
 
-        constexpr void _release () noexcept { if( texture_ ) texture_->release() ; }
+        constexpr void _release () noexcept { if( texture_ ) { texture_->release() ; texture_ = nullptr ; } }
 
         constexpr void _init ( MTL::Texture * _texture_ ) noexcept
         {

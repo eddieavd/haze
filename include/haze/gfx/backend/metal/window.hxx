@@ -35,6 +35,11 @@ public:
         constexpr window (                                                            ) noexcept = default ;
         constexpr window ( size_type _width_, size_type _height_, string_view _title_ ) noexcept           ;
 
+        constexpr window             ( window const &  _other_ ) noexcept ;
+        constexpr window             ( window       && _other_ ) noexcept ;
+        constexpr window & operator= ( window const &  _other_ ) noexcept ;
+        constexpr window & operator= ( window       && _other_ ) noexcept ;
+
         constexpr ~window () noexcept { _release() ; }
 
         constexpr void set_title ( string_view _title_                     ) noexcept ;
@@ -54,7 +59,7 @@ private:
 
         constexpr void _init () noexcept ;
 
-        constexpr void _release () noexcept { if( window_ ) window_->release() ; }
+        constexpr void _release () noexcept { if( window_ ) { window_->release() ; window_ = nullptr ; } }
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -67,6 +72,60 @@ constexpr window::window ( size_type _width_, size_type _height_, string_view _t
         set_title( _title_           ) ;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr window::window ( window const & _other_ ) noexcept
+        : shape_ { _other_. shape_ }
+        , title_ ( _other_. title_ )
+        , window_{ _other_.window_ }
+{
+        window_->retain() ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr window::window ( window && _other_ ) noexcept
+        : shape_ { _other_.shape_ }
+        , title_ ( UTI_MOVE( _other_.title_ ) )
+        , window_{ _other_.window_ }
+{
+        _other_.window_ = nullptr ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr window & window::operator= ( window const & _other_ ) noexcept
+{
+        _release() ;
+
+        shape_  = _other_. shape_ ;
+        title_  = _other_. title_ ;
+        window_ = _other_.window_ ;
+
+        window_->retain() ;
+
+        return *this ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr window & window::operator= ( window && _other_ ) noexcept
+{
+        _release() ;
+
+        shape_  = _other_. shape_ ;
+        title_  = _other_. title_ ;
+        window_ = _other_.window_ ;
+
+        _other_.shape_  =      {} ;
+        _other_.title_  =      {} ;
+        _other_.window_ = nullptr ;
+
+        return *this ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 constexpr void window::set_title ( string_view _title_ ) noexcept
 {
         title_ = string( _title_ ) ;
@@ -74,12 +133,16 @@ constexpr void window::set_title ( string_view _title_ ) noexcept
         if( window_ ) window_->setTitle( NS::String::string( title_.c_str(), NS::StringEncoding::UTF8StringEncoding ) ) ;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 constexpr void window::set_size ( size_type _width_, size_type _height_ ) noexcept
 {
         if( window_ != nullptr ) { HAZE_CORE_ERROR( "window::set_size : can not set size on existing window" ) ; return ; }
 
         shape_  = { { 100, 100 }, { static_cast< CGFloat >( _width_ ), static_cast< CGFloat >( _height_ ) } } ;
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 constexpr void window::_init () noexcept
 {

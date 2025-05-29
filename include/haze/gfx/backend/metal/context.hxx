@@ -27,7 +27,12 @@ public:
         friend _base        ;
 
         constexpr  context () noexcept = default ;
-        constexpr ~context () noexcept { device_->release() ; }
+        constexpr ~context () noexcept { if( device_ ) device_->release() ; }
+
+        constexpr context             ( context const &  _other_ ) noexcept :              device_ ( _other_.device_ ) {                           ; device_->retain() ;                }
+        constexpr context             ( context       && _other_ ) noexcept :              device_ ( _other_.device_ ) { _other_.device_ = nullptr ;                   ;                }
+        constexpr context & operator= ( context const &  _other_ ) noexcept { _release() ; device_ = _other_.device_ ;                             ; device_->retain() ; return *this ; }
+        constexpr context & operator= ( context       && _other_ ) noexcept { _release() ; device_ = _other_.device_ ;   _other_.device_ = nullptr ;                   ; return *this ; }
 
         constexpr MTL::Device       * device ()       noexcept { return device_ ; }
         constexpr MTL::Device const * device () const noexcept { return device_ ; }
@@ -63,7 +68,11 @@ constexpr void context::_init ()
 
 constexpr void context::_release () noexcept
 {
-        device_->release() ;
+        if( device_ )
+        {
+                device_->release() ;
+                device_ = nullptr ;
+        }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

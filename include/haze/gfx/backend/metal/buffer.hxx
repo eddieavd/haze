@@ -32,6 +32,11 @@ public:
         constexpr buffer (                        ) noexcept = default ;
         constexpr buffer ( MTL::Buffer * _buffer_ ) noexcept : buffer_{ _buffer_ } {}
 
+        constexpr buffer             ( buffer const &  _other_ ) noexcept :              buffer_ ( _other_.buffer_ ) {                           ; buffer_->retain() ;                }
+        constexpr buffer             ( buffer       && _other_ ) noexcept :              buffer_ ( _other_.buffer_ ) { _other_.buffer_ = nullptr ;                   ;                }
+        constexpr buffer & operator= ( buffer const &  _other_ ) noexcept { _release() ; buffer_ = _other_.buffer_ ;                             ; buffer_->retain() ; return *this ; }
+        constexpr buffer & operator= ( buffer       && _other_ ) noexcept { _release() ; buffer_ = _other_.buffer_ ;   _other_.buffer_ = nullptr ;                   ; return *this ; }
+
         constexpr operator MTL::Buffer       * ()       noexcept { return buffer_ ; }
         constexpr operator MTL::Buffer const * () const noexcept { return buffer_ ; }
 
@@ -41,7 +46,7 @@ private:
 
         constexpr bool _is_loaded () const noexcept { return buffer_ != nullptr ; }
 
-        constexpr void _release () noexcept { if( buffer_ ) buffer_->release() ; }
+        constexpr void _release () noexcept { if( buffer_ ) { buffer_->release() ; buffer_ = nullptr ; } }
 
         constexpr void _init ( MTL::Buffer * _buffer_ ) noexcept
         {
@@ -51,6 +56,9 @@ private:
         }
 
         constexpr void _signal_modified () noexcept { buffer_->didModifyRange( NS::Range::Make( 0, _length() ) ) ; }
+
+        constexpr MTL::Buffer       * _impl ()       noexcept { return buffer_ ; }
+        constexpr MTL::Buffer const * _impl () const noexcept { return buffer_ ; }
 
         constexpr void       * _data ()       noexcept { return buffer_->contents() ; }
         constexpr void const * _data () const noexcept { return buffer_->contents() ; }

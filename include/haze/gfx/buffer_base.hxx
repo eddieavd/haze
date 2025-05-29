@@ -36,6 +36,9 @@ public:
         UTI_NODISCARD constexpr ssize_type         length () const noexcept { return static_cast< _impl const * >( this )->        _length() ; }
         UTI_NODISCARD constexpr ssize_type allocated_size () const noexcept { return static_cast< _impl const * >( this )->_allocated_size() ; }
 
+        UTI_NODISCARD constexpr decltype( auto ) impl ()       noexcept { return static_cast< _impl       * >( this )->_impl() ; }
+        UTI_NODISCARD constexpr decltype( auto ) impl () const noexcept { return static_cast< _impl const * >( this )->_impl() ; }
+
         constexpr void    init ( void * _impl_ )          { static_cast< _impl * >( this )->   _init( _impl_ ) ; }
         constexpr void release (               ) noexcept { static_cast< _impl * >( this )->_release(        ) ; }
 protected:

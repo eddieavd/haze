@@ -14,6 +14,8 @@
 #include <haze/gfx/texture.hxx>
 #include <haze/gfx/renderer_base.hxx>
 
+#include <haze/gfx/backend/metal/shaders/basic_triangle_source.hxx>
+
 
 namespace haze::mtl
 {
@@ -34,25 +36,36 @@ public:
         friend _base        ;
 
         constexpr  renderer ( context & _ctx_ ) noexcept : ctx_{ _ctx_ } { HAZE_CORE_DBG( "renderer : created" ) ; }
-        constexpr ~renderer (                 ) noexcept { release() ; }
-
-        constexpr void draw ( layer & _layer_, std::function< void( layer &, MTL::RenderCommandEncoder * ) > const & _update_, MTK::View * _view_ ) ;
+        constexpr ~renderer (                 ) noexcept { _release() ; }
 
         constexpr bool initialized () const noexcept { return cmd_q_ != nullptr ; }
 private:
         context                  &     ctx_    ;
         MTL::CommandQueue        *   cmd_q_ {} ;
-//      MTL::RenderPipelineState * rpstate_ {} ;
+        MTL::RenderPipelineState * rpstate_ {} ;
+
+        MTL::Library * shader_lib_ {} ;
+
+        buffer        arg_buffer_ {} ;
+        buffer vertex_pos_buffer_ {} ;
+        buffer vertex_col_buffer_ {} ;
 
         constexpr void    _init ()          ;
         constexpr void _release () noexcept ;
+
+        constexpr void    _compile_shaders () ;
+        constexpr void _initialize_buffers () ;
+
+        constexpr void _draw ( layer const & _layer_, void * _view_ ) ;
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-constexpr void renderer::draw ( layer & _layer_, std::function< void( layer &, MTL::RenderCommandEncoder * ) > const & _update_, MTK::View * _view_ )
+constexpr void renderer::_draw ( layer const & _layer_, void * _view_ )
 {
+        MTK::View * view = static_cast< MTK::View * >( _view_ ) ;
+
         HAZE_CORE_YAP_S( "renderer::draw : starting draw call..." ) ;
 
         NS::AutoreleasePool * pool = NS::AutoreleasePool::alloc()->init() ;
@@ -63,7 +76,7 @@ constexpr void renderer::draw ( layer & _layer_, std::function< void( layer &, M
         HAZE_CORE_YAP( "renderer::draw : command buffer initialized" ) ;
 
         HAZE_CORE_YAP( "renderer::draw : getting render pass descriptor..." ) ;
-        MTL::RenderPassDescriptor * rpd = _view_->currentRenderPassDescriptor() ;
+        MTL::RenderPassDescriptor * rpd = view->currentRenderPassDescriptor() ;
         if( !rpd ) { HAZE_CORE_FATAL( "renderer::draw : failed getting render pass descriptor!" ) ; return ; }
         HAZE_CORE_YAP( "renderer::draw : render pass descriptor initialized" ) ;
 
@@ -72,25 +85,71 @@ constexpr void renderer::draw ( layer & _layer_, std::function< void( layer &, M
         if( !enc ) { HAZE_CORE_FATAL( "renderer::draw : failed initializing render command encoder!" ) ; return ; }
         HAZE_CORE_YAP( "renderer::draw : render command encoder intialized" ) ;
 
-//      enc->setRenderPipelineState( rpstate_ ) ;
-//      HAZE_CORE_YAP( "renderer::draw : render pipeline state set" ) ;
+        enc->setRenderPipelineState( rpstate_ ) ;
+        HAZE_CORE_YAP( "renderer::draw : render pipeline state set" ) ;
 
-        HAZE_CORE_YAP( "renderer::draw : dispatching to on_update handler..." ) ;
-        _update_( _layer_, enc ) ;
-        HAZE_CORE_YAP( "renderer::draw : on_update finished" ) ;
+        HAZE_CORE_YAP( "renderer::draw : translating layer into vertices..." ) ;
 
-//      _layer_.for_each(
-//              []( auto const & object )
-//              {
+        _layer_.for_each(
+                [ & ]( auto const & object )
+                {
+                        using object_type = uti::remove_cvref_t< decltype( object ) > ;
+                        if constexpr( !uti::meta::instantiated_from< object_type, filled_shape > )
+                        {
 
-//              }
-//      ) ;
+                        }
+                        else
+                        {
+                                using pixel_type = typename object_type::pixel_type ;
+                                using shape_type = typename object_type::shape_type ;
+
+                                shape_type const & shape = object.shape() ;
+
+                                if constexpr( uti::meta::instantiated_from< shape_type, generic_triangle > )
+                                {
+                                        simd::float3 positions [ 3 ] =
+                                        {
+                                                { shape.a_.x(), shape.a_.y(), 0.0 } ,
+                                                { shape.b_.x(), shape.b_.y(), 0.0 } ,
+                                                { shape.c_.x(), shape.c_.y(), 0.0 }
+                                        } ;
+                                        simd::float3 colors [ 3 ] =
+                                        {
+                                                { static_cast< float >( object.fill()[ pixel_type:: RED ] ) / 255.0f, static_cast< float >( object.fill()[ pixel_type::GREEN ] / 255.0f ) ,
+                                                  static_cast< float >( object.fill()[ pixel_type::BLUE ] ) / 255.0f } ,
+
+                                                { static_cast< float >( object.fill()[ pixel_type:: RED ] ) / 255.0f, static_cast< float >( object.fill()[ pixel_type::GREEN ] / 255.0f ) ,
+                                                  static_cast< float >( object.fill()[ pixel_type::BLUE ] ) / 255.0f } ,
+
+                                                { static_cast< float >( object.fill()[ pixel_type:: RED ] ) / 255.0f, static_cast< float >( object.fill()[ pixel_type::GREEN ] / 255.0f ) ,
+                                                  static_cast< float >( object.fill()[ pixel_type::BLUE ] ) / 255.0f }
+                                        } ;
+
+                                        memcpy( vertex_pos_buffer_.data(), positions, sizeof( positions ) ) ;
+                                        memcpy( vertex_col_buffer_.data(),    colors, sizeof(    colors ) ) ;
+
+                                        vertex_pos_buffer_.signal_modified() ;
+                                        vertex_col_buffer_.signal_modified() ;
+                                }
+                        }
+                }
+        ) ;
+
+        HAZE_CORE_YAP( "renderer::draw : setting render pass arguments..." ) ;
+
+        enc->setVertexBuffer( arg_buffer_, 0, 0 ) ;
+        enc->useResource( vertex_pos_buffer_, MTL::ResourceUsageRead ) ;
+        enc->useResource( vertex_col_buffer_, MTL::ResourceUsageRead ) ;
+
+        HAZE_CORE_YAP( "renderer::draw : encoding draw call..." ) ;
+
+        enc->drawPrimitives( MTL::PrimitiveType::PrimitiveTypeTriangle, NS::UInteger( 0 ), NS::UInteger( 3 ) ) ;
 
         HAZE_CORE_YAP( "renderer::draw : ending encoding..." ) ;
         enc->endEncoding() ;
 
         HAZE_CORE_YAP( "renderer::draw : asking system to present drawable..." ) ;
-        cmd->presentDrawable( _view_->currentDrawable() ) ;
+        cmd->presentDrawable( view->currentDrawable() ) ;
 
         HAZE_CORE_YAP( "renderer::draw : committing work to GPU..." ) ;
         cmd->commit() ;
@@ -103,7 +162,12 @@ constexpr void renderer::draw ( layer & _layer_, std::function< void( layer &, M
 
 constexpr void renderer::_release () noexcept
 {
-
+        if( shader_lib_ ) { shader_lib_      ->release() ; shader_lib_ = nullptr ; }
+                            arg_buffer_       .release() ;
+                            vertex_pos_buffer_.release() ;
+                            vertex_col_buffer_.release() ;
+        if(    rpstate_ ) { rpstate_         ->release() ;    rpstate_ = nullptr ; }
+        if(      cmd_q_ ) { cmd_q_           ->release() ;      cmd_q_ = nullptr ; }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -115,63 +179,114 @@ constexpr void renderer::_init ()
         cmd_q_ = ctx_.device()->newCommandQueue() ;
 
         if( !cmd_q_ ) HAZE_CORE_FATAL( "renderer::init : failed creating command queue!" ) ;
-        else          HAZE_CORE_INFO ( "renderer::init : finished" ) ;
+        else          HAZE_CORE_INFO ( "renderer::init : command queue created" ) ;
+
+        HAZE_CORE_INFO( "renderer::init : compiling shaders..." ) ;
+        _compile_shaders() ;
+        HAZE_CORE_INFO( "renderer::init : allocating buffers..." ) ;
+        _initialize_buffers() ;
+        HAZE_CORE_INFO( "renderer::init : finished" ) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////////////////////////////////////////
-
-static constexpr ssize_t max_quad_count   {             10'000 } ;
-static constexpr ssize_t max_vertex_count { max_quad_count * 4 } ;
-static constexpr ssize_t max_index_count  { max_quad_count * 6 } ;
-static constexpr ssize_t max_textures     {                 32 } ; // ask driver for exact number of slots
-
-////////////////////////////////////////////////////////////////////////////////
-
-class batch_renderer
+constexpr void renderer::_compile_shaders ()
 {
-        struct stats
+        HAZE_CORE_INFO_S( "renderer::compile_shaders" ) ;
+
+        using NS::StringEncoding::UTF8StringEncoding ;
+
+        string_view shader_source = ::haze::mtl::basic_triangle_shader_source ;
+
+        NS::Error * error = nullptr ;
+        MTL::Library * library = ctx_.device()->newLibrary( NS::String::string( shader_source.data(), UTF8StringEncoding ), nullptr, &error ) ;
+        if ( !library )
         {
-                i32_t draw_count {} ;
-                i32_t quad_count {} ;
-        } ;
-public:
-        constexpr  batch_renderer ( context & _ctx_ ) noexcept : ctx_{ _ctx_ }, quad_buffer_( max_quad_count ), quad_buffer_iter_( quad_buffer_.begin() ) {}
-        constexpr ~batch_renderer (                 ) noexcept { release() ; }
+                HAZE_CORE_FATAL( "renderer::_compile_shaders : %s", error->localizedDescription()->utf8String() ) ;
+        }
+        HAZE_CORE_INFO( "renderer::compile_shaders : created shader library from source" ) ;
 
-        constexpr void    init ()           ;
-        constexpr void release () noexcept {}
+        MTL::Function * vertex_fn = library->newFunction( NS::String::string(   "vertex_main", UTF8StringEncoding ) ) ;
+        MTL::Function *   frag_fn = library->newFunction( NS::String::string( "fragment_main", UTF8StringEncoding ) ) ;
 
-        constexpr void begin_batch () ;
-        constexpr void   end_batch () ;
-        constexpr void       flush () ;
+        HAZE_CORE_INFO( "renderer::compile_shaders : created vertex and fragment functions" ) ;
 
-        constexpr void draw_quad ( simd::float2 const & _position_, simd::float2 const & _size_, simd::float4 const & _color_ ) ;
-        constexpr void draw_quad ( simd::float2 const & _position_, simd::float2 const & _size_, i32_t           _texture_id_ ) ;
+        MTL::RenderPipelineDescriptor* desc = MTL::RenderPipelineDescriptor::alloc()->init() ;
+        desc->setVertexFunction( vertex_fn ) ;
+        desc->setFragmentFunction( frag_fn ) ;
+        desc->colorAttachments()->object( 0 )->setPixelFormat( MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB ) ;
 
-        constexpr stats const & get_stats () const noexcept { return stats_ ; }
-        constexpr void        reset_stats ()       noexcept { stats_ = {}   ; }
-private:
-        context & ctx_ ;
+        HAZE_CORE_INFO( "renderer::compile_shaders : configured render pipeline descriptor" ) ;
 
-        stats stats_ {} ;
+        MTL::RenderPipelineState * rpstate = ctx_.device()->newRenderPipelineState( desc, &error ) ;
+        if ( !rpstate )
+        {
+                HAZE_CORE_FATAL( "renderer::_compile_shaders : %s", error->localizedDescription()->utf8String() ) ;
+        }
+        HAZE_CORE_INFO( "renderer::compile_shaders : render pipeline state created" ) ;
 
-        u32_t quad_vertex_array_  {} ;
-        u32_t quad_vertex_buffer_ {} ;
-        u32_t quad_index_buffer_  {} ; // 16:20
+        rpstate_    = rpstate ;
+        shader_lib_ = library ;
 
-        texture white_texture_      {} ;
-        u32_t   white_texture_slot_ {} ;
+        vertex_fn->release() ;
+        frag_fn  ->release() ;
+        desc     ->release() ;
 
-        u32_t index_count_ {} ;
+        HAZE_CORE_INFO( "renderer::compile_shaders : finished" ) ;
+}
 
-        vector< vertex >           quad_buffer_      {} ;
-        vector< vertex >::iterator quad_buffer_iter_ {} ;
+////////////////////////////////////////////////////////////////////////////////
 
-        uti::array< texture, max_textures > texture_slots_ {} ;
-        u32_t texture_slot_index_ {} ;
-} ;
+constexpr void renderer::_initialize_buffers ()
+{
+        HAZE_CORE_INFO_S( "renderer::initialize_buffers" ) ;
+
+        static constexpr ssize_t pos_data_size { 3 * sizeof( simd::float3 ) } ;
+        static constexpr ssize_t col_data_size { 3 * sizeof( simd::float3 ) } ;
+
+        HAZE_CORE_INFO( "renderer::intialize_buffers : allocating buffer of %ld bytes...", pos_data_size ) ;
+        vertex_pos_buffer_ = ctx_.create_buffer( pos_data_size, storage_mode::managed ) ;
+
+        HAZE_CORE_INFO( "renderer::intialize_buffers : allocating buffer of %ld bytes...", col_data_size ) ;
+        vertex_col_buffer_ = ctx_.create_buffer( col_data_size, storage_mode::managed ) ;
+
+        if( !vertex_pos_buffer_.is_loaded() ) { HAZE_CORE_FATAL( "renderer::initialize_buffers : failed to allocate vertex position buffer!" ) ; return ; }
+        if( !vertex_col_buffer_.is_loaded() ) { HAZE_CORE_FATAL( "renderer::initialize_buffers : failed to allocate vertex color buffer!"    ) ; return ; }
+
+        using NS::StringEncoding::UTF8StringEncoding ;
+
+        if( !shader_lib_ ) { HAZE_CORE_FATAL( "renderer::initialize_buffers : shader library does not exist!" ) ; return ; }
+
+        HAZE_CORE_INFO( "renderer::intialize_buffers : getting vertex function from shader library..." ) ;
+        MTL::Function * vertex_fn = shader_lib_->newFunction( NS::String::string( "vertex_main", UTF8StringEncoding ) ) ;
+
+        if( !vertex_fn ) { HAZE_CORE_FATAL( "renderer::initialize_buffers : failed getting vertex function from shader library!" ) ; return ; }
+
+        HAZE_CORE_INFO( "renderer::intialize_buffers : creating argument encoder for vertex function..." ) ;
+        MTL::ArgumentEncoder * arg_encoder = vertex_fn->newArgumentEncoder( 0 ) ;
+
+        if( !arg_encoder ) { HAZE_CORE_FATAL( "renderer::initialize_buffers : failed creating argument encoder!" ) ; return ; }
+
+        HAZE_CORE_INFO( "renderer::intialize_buffers : allocating argument buffer..." ) ;
+        arg_buffer_ = ctx_.create_buffer( arg_encoder->encodedLength(), storage_mode::managed ) ;
+
+        if( !arg_buffer_.is_loaded() ) { HAZE_CORE_FATAL( "renderer::initialize_buffers : failed to allocate argument buffer!" ) ; return ; }
+
+        HAZE_CORE_INFO( "renderer::initialize_buffers : allocated argument buffer of %ld bytes", arg_buffer_.allocated_size() ) ;
+
+        HAZE_CORE_INFO( "renderer::intialize_buffers : initializing argument buffer..." ) ;
+        arg_encoder->setArgumentBuffer( arg_buffer_, 0 ) ;
+
+        arg_encoder->setBuffer( vertex_pos_buffer_, 0, 0 ) ;
+        arg_encoder->setBuffer( vertex_col_buffer_, 0, 1 ) ;
+
+        arg_buffer_.signal_modified() ;
+
+        vertex_fn  ->release() ;
+        arg_encoder->release() ;
+
+        HAZE_CORE_INFO( "renderer::intialize_buffers : finished" ) ;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
