@@ -26,15 +26,18 @@ public:
         using  _base::_base ;
         friend _base        ;
 
-        constexpr context () noexcept : _base(), device_{ MTL::CreateSystemDefaultDevice() }
-        {
-                if( !device_ ) HAZE_CORE_FATAL( "failed to initialize gpu device" ) ;
-                else           HAZE_CORE_INFO (          "initialized gpu device" ) ;
-        }
-
+        constexpr  context () noexcept = default ;
         constexpr ~context () noexcept { device_->release() ; }
+
+        constexpr MTL::Device       * device ()       noexcept { return device_ ; }
+        constexpr MTL::Device const * device () const noexcept { return device_ ; }
 private:
         MTL::Device * device_ ;
+
+        constexpr void    _init ()          ;
+        constexpr void _release () noexcept ;
+
+        constexpr buffer _create_buffer ( ssize_t _bytes_ ) ;
 
         template< meta::image_like ImageType >
         constexpr generic_texture< typename ImageType::pixel_type, typename ImageType::point_type >
@@ -48,10 +51,38 @@ private:
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+constexpr void context::_init ()
+{
+        device_ = MTL::CreateSystemDefaultDevice() ;
+
+        if( !device_ ) HAZE_CORE_FATAL( "context::init : failed to initialize GPU device context!" ) ;
+        else           HAZE_CORE_INFO ( "context::init : initialized default GPU device context"   ) ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr void context::_release () noexcept
+{
+        device_->release() ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr buffer context::_create_buffer ( ssize_t _bytes_ )
+{
+        MTL::Buffer * mtlbuff = device_->newBuffer( _bytes_, MTL::ResourceStorageModeShared ) ;
+
+        return buffer( mtlbuff ) ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 template< meta::image_like ImageType >
 constexpr generic_texture< typename ImageType::pixel_type, typename ImageType::point_type >
 context::_create_texture ( ImageType const & _image_ )
 {
+        HAZE_CORE_DBG( "generic_texture::_create_texture( image_type )" ) ;
+
         using texture_type = generic_texture< typename ImageType::pixel_type, typename ImageType::point_type > ;
 
         MTL::TextureDescriptor * desc = MTL::TextureDescriptor::texture2DDescriptor
@@ -76,6 +107,8 @@ template< meta::pixel_like PixelType, meta::point_like PointType >
 constexpr generic_texture< PixelType, PointType >
 context::_create_texture ( texture_spec const & _spec_ )
 {
+        HAZE_CORE_DBG( "generic_texture::_create_texture( texture_spec )" ) ;
+
         using texture_type = generic_texture< PixelType, PointType > ;
 
         MTL::TextureDescriptor * desc = MTL::TextureDescriptor::texture2DDescriptor

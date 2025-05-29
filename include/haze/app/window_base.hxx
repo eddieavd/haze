@@ -31,8 +31,17 @@ public:
         using shape_type = generic_rectangle< point_type > ;
         using  size_type = typename point_type::coordinate_type ;
 
-        UTI_NODISCARD constexpr size_type  width () const noexcept { return static_cast< _impl const * >( this )-> _width() ; }
-        UTI_NODISCARD constexpr size_type height () const noexcept { return static_cast< _impl const * >( this )->_height() ; }
+        constexpr void init () noexcept { static_cast< _impl * >( this )->_init() ; }
+
+        constexpr void release () noexcept { static_cast< _impl * >( this )->_release() ; }
+
+        UTI_NODISCARD constexpr size_type   width () const noexcept { return static_cast< _impl const * >( this )-> _width() ; }
+        UTI_NODISCARD constexpr size_type  height () const noexcept { return static_cast< _impl const * >( this )->_height() ; }
+        UTI_NODISCARD constexpr string_view title () const noexcept { return static_cast< _impl const * >( this )-> _title() ; }
+        UTI_NODISCARD constexpr auto        shape () const noexcept { return static_cast< _impl const * >( this )-> _shape() ; }
+
+        UTI_NODISCARD constexpr decltype( auto ) raw_window ()       noexcept { return static_cast< _impl       * >( this )->_raw_window() ; }
+        UTI_NODISCARD constexpr decltype( auto ) raw_window () const noexcept { return static_cast< _impl const * >( this )->_raw_window() ; }
 protected:
         constexpr  window_base () noexcept = default ;
         constexpr ~window_base () noexcept = default ;

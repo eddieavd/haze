@@ -68,5 +68,41 @@ constexpr MTL::PixelFormat metal_pixel_format ( pixel_format _format_ ) noexcept
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template< typename RectangleType >
+        requires( uti::meta::instantiated_from< RectangleType, generic_rectangle > )
+constexpr RectangleType rect_from_mtl ( CGRect const & _rect_ ) noexcept
+{
+        RectangleType rect {} ;
+
+        rect.begin_point().x() = _rect_.origin.x ;
+        rect.begin_point().y() = _rect_.origin.y ;
+
+        rect.end_point().x() = _rect_.origin.x + _rect_.size. width ;
+        rect.end_point().y() = _rect_.origin.y + _rect_.size.height ;
+
+        return rect ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+template< typename RectangleType >
+        requires( uti::meta::instantiated_from< RectangleType, generic_rectangle > )
+constexpr CGRect rect_to_mtl ( RectangleType const & _rect_ ) noexcept
+{
+        return CGRect
+        {
+                {
+                        _rect_.begin_point().x() ,
+                        _rect_.begin_point().y()
+                } ,
+                {
+                        _rect_. width() ,
+                        _rect_.height()
+                }
+        } ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 
 } // namespace haze::mtl::compat

@@ -47,6 +47,8 @@ public:
         UTI_NODISCARD constexpr image_type download (                            ) const noexcept { return static_cast< _impl const * >( this )->_download(         ) ; }
 
         constexpr void release () noexcept { static_cast< _impl * >( this )->_release() ; }
+
+        constexpr void init ( void * _impl_ ) noexcept { static_cast< _impl * >( this )->_init( _impl_ ) ; }
 protected:
         constexpr  texture_base () noexcept = default ;
         constexpr ~texture_base () noexcept = default ;

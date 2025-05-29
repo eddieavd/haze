@@ -33,11 +33,12 @@ public:
         using  _base::_base ;
         friend _base        ;
 
+        constexpr generic_texture (                          ) noexcept = default ;
         constexpr generic_texture ( MTL::Texture * _texture_ ) noexcept : texture_{ _texture_ } {}
 
         constexpr ~generic_texture () noexcept { _release() ; }
 private:
-        MTL::Texture * texture_ ;
+        MTL::Texture * texture_ {} ;
 
         constexpr size_type  _width () const noexcept { return texture_ -> width() ; }
         constexpr size_type _height () const noexcept { return texture_ ->height() ; }
@@ -47,6 +48,13 @@ private:
         constexpr image_type _download (                            ) const noexcept ;
 
         constexpr void _release () noexcept { if( texture_ ) texture_->release() ; }
+
+        constexpr void _init ( MTL::Texture * _texture_ ) noexcept
+        {
+                if( texture_ ) { HAZE_CORE_ERROR( "texture::init : called on already initialized texture" ) ; return ; }
+
+                texture_ = _texture_ ;
+        }
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////

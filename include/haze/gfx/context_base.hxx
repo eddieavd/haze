@@ -8,6 +8,7 @@
 
 #include <haze/core/common/types.hxx>
 
+#include <haze/gfx/buffer.hxx>
 #include <haze/gfx/texture.hxx>
 
 
@@ -22,6 +23,11 @@ class context_base
 {
         using _impl = ContextImpl ;
 public:
+        constexpr void    init ()          { static_cast< _impl * >( this )->   _init() ; }
+        constexpr void release () noexcept { static_cast< _impl * >( this )->_release() ; }
+
+        UTI_NODISCARD constexpr buffer create_buffer ( ssize_t _bytes_ ) { return static_cast< _impl * >( this )->_create_buffer( _bytes_ ) ; }
+
         template< meta::image_like ImageType >
         UTI_NODISCARD constexpr generic_texture< typename ImageType::pixel_type, typename ImageType::point_type >
         create_texture ( ImageType    const & _image_ ) { return static_cast< _impl * >( this )->_create_texture( _image_ ) ; }

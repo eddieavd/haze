@@ -32,18 +32,73 @@ public:
         using  _base::_base ;
         friend _base        ;
 
-        constexpr window ( size_type _width_, size_type _height_ ) noexcept ;
+        constexpr window (                                                            ) noexcept = default ;
+        constexpr window ( size_type _width_, size_type _height_, string_view _title_ ) noexcept           ;
 
-        constexpr ~window () noexcept ;
+        constexpr ~window () noexcept { _release() ; }
+
+        constexpr void set_title ( string_view _title_                     ) noexcept ;
+        constexpr void set_size  ( size_type   _width_, size_type _height_ ) noexcept ;
 private:
-        constexpr size_type  _width () const noexcept ;
-        constexpr size_type _height () const noexcept ;
+        CGRect        shape_ { { 100, 100 }, { static_cast< CGFloat >( 800 ), static_cast< CGFloat >( 600 ) } } ;
+        string        title_ {} ;
+        NS::Window * window_ {} ;
+
+        constexpr size_type   _width () const noexcept { return shape_.size. width ; }
+        constexpr size_type  _height () const noexcept { return shape_.size.height ; }
+        constexpr string_view _title () const noexcept { return title_ ; }
+        constexpr auto        _shape () const noexcept { return shape_ ; }
+
+        constexpr NS::Window       * _raw_window ()       noexcept { return window_ ; }
+        constexpr NS::Window const * _raw_window () const noexcept { return window_ ; }
+
+        constexpr void _init () noexcept ;
+
+        constexpr void _release () noexcept { if( window_ ) window_->release() ; }
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
+constexpr window::window ( size_type _width_, size_type _height_, string_view _title_ ) noexcept
+        : shape_{ { 100, 100 }, { static_cast< CGFloat >( _width_ ), static_cast< CGFloat >( _height_ ) } }
+{
+        set_size ( _width_, _height_ ) ;
+        set_title( _title_           ) ;
+}
 
+constexpr void window::set_title ( string_view _title_ ) noexcept
+{
+        title_ = string( _title_ ) ;
+
+        if( window_ ) window_->setTitle( NS::String::string( title_.c_str(), NS::StringEncoding::UTF8StringEncoding ) ) ;
+}
+
+constexpr void window::set_size ( size_type _width_, size_type _height_ ) noexcept
+{
+        if( window_ != nullptr ) { HAZE_CORE_ERROR( "window::set_size : can not set size on existing window" ) ; return ; }
+
+        shape_  = { { 100, 100 }, { static_cast< CGFloat >( _width_ ), static_cast< CGFloat >( _height_ ) } } ;
+}
+
+constexpr void window::_init () noexcept
+{
+        HAZE_CORE_INFO( "window::init : initializing window with resolution %.fx%.f ...", shape_.size.width, shape_.size.height ) ;
+
+        window_ = NS::Window::alloc()->init(
+                shape_,
+                NS::WindowStyleMaskClosable | NS::WindowStyleMaskTitled,
+                NS::BackingStoreBuffered,
+                false
+        ) ;
+        if( !window_ ) HAZE_CORE_FATAL( "window::init : failed to initialize window!" ) ;
+
+        HAZE_CORE_INFO( "window::init : setting window title to " SV_FMT" ...", SV_ARG( title_ ) ) ;
+
+        window_->setTitle( NS::String::string( title_.c_str(), NS::StringEncoding::UTF8StringEncoding ) ) ;
+
+        HAZE_CORE_INFO( "window::init : finished" ) ;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
