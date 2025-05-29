@@ -31,8 +31,6 @@
 #include <haze/app/window.hxx>
 #include <haze/app/app.hxx>
 
-#include <raylib.h>
-
 
 
 using texture_type = haze::texture ;
@@ -54,14 +52,14 @@ int main ( int argc, char ** argv )
                 {  0.0f, -0.8f, 0.0f },
                 { +0.8f,  0.8f, 0.0f }
         };
-        static constexpr simd::float3 colors[ num_vertices ] =
+        static constexpr simd::float4 colors[ num_vertices ] =
         {
-                {  1.0, 0.3f, 0.2f },
-                {  0.8f, 1.0, 0.0f },
-                {  0.8f, 0.0f, 1.0 }
+                { 1.0f, 0.0f, 0.0f, 0.1f },
+                { 0.0f, 1.0f, 0.0f, 0.1f },
+                { 0.0f, 0.0f, 1.0f, 0.1f }
         };
         static constexpr int positions_data_size = num_vertices * sizeof( simd::float3 ) ;
-        static constexpr int    colors_data_size = num_vertices * sizeof( simd::float3 ) ;
+        static constexpr int    colors_data_size = num_vertices * sizeof( simd::float4 ) ;
 
         haze::log::init( argc, argv ) ;
 
@@ -72,13 +70,16 @@ int main ( int argc, char ** argv )
 
         HAZE_INFO( "main : initialized context" ) ;
 
-        haze::buffer vertex_positions_buffer = ctx.create_buffer( positions_data_size ) ;
-        haze::buffer vertex_colors_buffer    = ctx.create_buffer(    colors_data_size ) ;
+        haze::buffer vertex_positions_buffer = ctx.create_buffer( positions_data_size, haze::storage_mode::managed ) ;
+        haze::buffer vertex_colors_buffer    = ctx.create_buffer(    colors_data_size, haze::storage_mode::managed ) ;
 
-        HAZE_INFO( "main : created buffers" ) ;
+        HAZE_INFO( "main : allocated buffers" ) ;
 
         memcpy( vertex_positions_buffer.data(), positions, positions_data_size ) ;
         memcpy( vertex_colors_buffer   .data(),    colors,    colors_data_size ) ;
+
+        vertex_positions_buffer.signal_modified() ;
+        vertex_colors_buffer   .signal_modified() ;
 
         HAZE_INFO( "main : initialized buffers" ) ;
 
@@ -103,7 +104,7 @@ int main ( int argc, char ** argv )
         app.get_window().set_size( 800, 800 ) ;
         app.get_window().set_title( "haze::app" ) ;
 
-        HAZE_INFO( "main : setting on update..." ) ;
+        HAZE_INFO( "main : setting on_update handler..." ) ;
 
         app.on_update( on_update ) ;
 
@@ -125,23 +126,23 @@ constexpr MTL::RenderPipelineState * init_render_pipeline_state ( MTL::Device * 
 
                 struct v2f
                 {
-                float4 position [[position]];
-                half3 color;
+                        float4 position [[position]];
+                        half4 color;
                 };
 
                 v2f vertex vertexMain( uint vertexId [[vertex_id]],
-                device const float3* positions [[buffer(0)]],
-                device const float3* colors [[buffer(1)]] )
+                                       device const float3* positions [[buffer(0)]],
+                                       device const float4* colors [[buffer(1)]] )
                 {
-                v2f o;
-                o.position = float4( positions[ vertexId ], 1.0 );
-                o.color = half3 ( colors[ vertexId ] );
-                return o;
+                        v2f o;
+                        o.position = float4( positions[ vertexId ], 1.0 );
+                        o.color = half4 ( colors[ vertexId ] );
+                        return o;
                 }
 
                 half4 fragment fragmentMain( v2f in [[stage_in]] )
                 {
-                return half4( in.color, 1.0 );
+                        return in.color ;
                 }
         )";
 

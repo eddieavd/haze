@@ -13,11 +13,31 @@
 
 #include <haze/gfx/backend/metal/common.hxx>
 
+#include <haze/gfx/common.hxx>
+
 
 namespace haze::mtl::compat
 {
 
 
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr MTL::PixelFormat metal_pixel_format ( pixel_format _format_ ) noexcept ;
+
+template< typename RectangleType >
+        requires( uti::meta::instantiated_from< RectangleType, generic_rectangle > )
+constexpr RectangleType rect_from_mtl ( CGRect const & _rect_ ) noexcept ;
+
+template< typename RectangleType >
+        requires( uti::meta::instantiated_from< RectangleType, generic_rectangle > )
+constexpr CGRect rect_to_mtl ( RectangleType const & _rect_ ) noexcept ;
+
+constexpr storage_mode storage_mode_from_mtl ( MTL::StorageMode     _mode_ ) noexcept ;
+constexpr storage_mode storage_mode_from_mtl ( MTL::ResourceOptions _mode_ ) noexcept ;
+
+constexpr MTL::ResourceOptions storage_mode_to_mtl ( storage_mode _mode_ ) noexcept ;
+
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 constexpr MTL::PixelFormat metal_pixel_format ( pixel_format _format_ ) noexcept
@@ -99,6 +119,48 @@ constexpr CGRect rect_to_mtl ( RectangleType const & _rect_ ) noexcept
                         _rect_. width() ,
                         _rect_.height()
                 }
+        } ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr storage_mode storage_mode_from_mtl ( MTL::StorageMode _mode_ ) noexcept
+{
+        switch( _mode_ )
+        {
+                case MTL::StorageModeShared     : return storage_mode::     shared ;
+                case MTL::StorageModeManaged    : return storage_mode::    managed ;
+                case MTL::StorageModePrivate    : return storage_mode::gpu_private ;
+                case MTL::StorageModeMemoryless :                [[ fallthrough ]] ;
+                default                                 : return storage_mode::       none ;
+        } ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr storage_mode storage_mode_from_mtl ( MTL::ResourceOptions _mode_ ) noexcept
+{
+        switch( _mode_ )
+        {
+                case MTL::ResourceStorageModeShared     : return storage_mode::     shared ;
+                case MTL::ResourceStorageModeManaged    : return storage_mode::    managed ;
+                case MTL::ResourceStorageModePrivate    : return storage_mode::gpu_private ;
+                case MTL::ResourceStorageModeMemoryless :                [[ fallthrough ]] ;
+                default                                 : return storage_mode::       none ;
+        } ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr MTL::ResourceOptions storage_mode_to_mtl ( storage_mode _mode_ ) noexcept
+{
+        switch( _mode_ )
+        {
+                case storage_mode::     shared : return MTL::ResourceStorageModeShared     ;
+                case storage_mode::    managed : return MTL::ResourceStorageModeManaged    ;
+                case storage_mode::gpu_private : return MTL::ResourceStorageModePrivate    ;
+                case storage_mode::       none :                         [[ fallthrough ]] ;
+                default                        : return MTL::ResourceStorageModeMemoryless ;
         } ;
 }
 

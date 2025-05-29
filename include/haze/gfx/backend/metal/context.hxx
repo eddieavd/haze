@@ -37,15 +37,15 @@ private:
         constexpr void    _init ()          ;
         constexpr void _release () noexcept ;
 
-        constexpr buffer _create_buffer ( ssize_t _bytes_ ) ;
+        constexpr buffer _create_buffer ( ssize_t _bytes_, storage_mode _mode_ ) ;
 
         template< meta::image_like ImageType >
         constexpr generic_texture< typename ImageType::pixel_type, typename ImageType::point_type >
-        _create_texture ( ImageType const & _image_ ) ;
+        _create_texture ( ImageType const & _image_, storage_mode _mode_ ) ;
 
         template< meta::pixel_like PixelType, meta::point_like PointType >
         constexpr generic_texture< PixelType, PointType >
-        _create_texture ( texture_spec const &  _spec_ ) ;
+        _create_texture ( texture_spec const & _spec_, storage_mode _mode_ ) ;
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -68,9 +68,9 @@ constexpr void context::_release () noexcept
 
 ////////////////////////////////////////////////////////////////////////////////
 
-constexpr buffer context::_create_buffer ( ssize_t _bytes_ )
+constexpr buffer context::_create_buffer ( ssize_t _bytes_, storage_mode _mode_ )
 {
-        MTL::Buffer * mtlbuff = device_->newBuffer( _bytes_, MTL::ResourceStorageModeShared ) ;
+        MTL::Buffer * mtlbuff = device_->newBuffer( _bytes_, compat::storage_mode_to_mtl( _mode_ ) ) ;
 
         return buffer( mtlbuff ) ;
 }
@@ -79,7 +79,7 @@ constexpr buffer context::_create_buffer ( ssize_t _bytes_ )
 
 template< meta::image_like ImageType >
 constexpr generic_texture< typename ImageType::pixel_type, typename ImageType::point_type >
-context::_create_texture ( ImageType const & _image_ )
+context::_create_texture ( ImageType const & _image_, storage_mode _mode_ )
 {
         HAZE_CORE_DBG( "generic_texture::_create_texture( image_type )" ) ;
 
@@ -105,7 +105,7 @@ context::_create_texture ( ImageType const & _image_ )
 
 template< meta::pixel_like PixelType, meta::point_like PointType >
 constexpr generic_texture< PixelType, PointType >
-context::_create_texture ( texture_spec const & _spec_ )
+context::_create_texture ( texture_spec const & _spec_, storage_mode _mode_ )
 {
         HAZE_CORE_DBG( "generic_texture::_create_texture( texture_spec )" ) ;
 
