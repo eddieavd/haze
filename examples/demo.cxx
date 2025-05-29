@@ -49,32 +49,25 @@ int main ( int argc, char ** argv )
         static constexpr triangle tri_1 =
         {
                 {
-                        { -1.0f, +1.0f, 0.0f },
-                        {  0.0f, -1.0f, 0.0f },
-                        { +1.0f, +1.0f, 0.0f }
+                        {  0.0f, +1.0f, 0.0f },
+                        { -0.866f, -0.5f, 0.0f },
+                        { +0.866f, -0.5f, 0.0f }
                 }, 
                 pixel_type{ 255, 18, 18, 255 }
+        } ;
+
+        static constexpr auto on_update =
+        [ & ]( haze::layer & app_layer )
+        {
+                if( app_layer.objects().empty() ) app_layer.add_object( tri_1 ) ;
         } ;
 
         HAZE_INFO( "main : creating app..." ) ;
 
         haze::app app ;
 
-        auto on_update = [ & ]( haze::layer & app_layer )
-        {
-                if( app_layer.objects().empty() ) app_layer.add_object( tri_1 ) ;
-
-                triangle & tri = app_layer.get_object< triangle >( 0 ) ;
-
-                --tri.fill()[ pixel_type:: RED ] ;
-        } ;
-
-        HAZE_INFO( "main : setting window size to 800x800" ) ;
         app.get_window().set_size( 800, 800 ) ;
-        HAZE_INFO( "main : setting window title to haze::app" ) ;
         app.get_window().set_title( "haze::app" ) ;
-
-        HAZE_INFO( "main : setting on_update handler..." ) ;
 
         app.on_update( on_update ) ;
 

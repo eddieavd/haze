@@ -54,8 +54,8 @@ private:
         constexpr string_view _title () const noexcept { return title_ ; }
         constexpr auto        _shape () const noexcept { return shape_ ; }
 
-        constexpr NS::Window       * _raw_window ()       noexcept { return window_ ; }
-        constexpr NS::Window const * _raw_window () const noexcept { return window_ ; }
+        constexpr NS::Window       * _impl ()       noexcept { return window_ ; }
+        constexpr NS::Window const * _impl () const noexcept { return window_ ; }
 
         constexpr void _init () noexcept ;
 
@@ -131,6 +131,8 @@ constexpr void window::set_title ( string_view _title_ ) noexcept
         title_ = string( _title_ ) ;
 
         if( window_ ) window_->setTitle( NS::String::string( title_.c_str(), NS::StringEncoding::UTF8StringEncoding ) ) ;
+
+        HAZE_CORE_INFO( "window::set_title : window title set to " SV_FMT, SV_ARG( _title_ ) ) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -140,6 +142,8 @@ constexpr void window::set_size ( size_type _width_, size_type _height_ ) noexce
         if( window_ != nullptr ) { HAZE_CORE_ERROR( "window::set_size : can not set size on existing window" ) ; return ; }
 
         shape_  = { { 100, 100 }, { static_cast< CGFloat >( _width_ ), static_cast< CGFloat >( _height_ ) } } ;
+
+        HAZE_CORE_INFO( "window::set_size : window size set to %ldx%ld", _width_, _height_ ) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

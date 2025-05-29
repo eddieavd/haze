@@ -18,6 +18,7 @@
 
 #include <haze/gfx/backend/metal/shaders/basic_triangle_source.hxx>
 #include <haze/gfx/backend/metal/shaders/rotating_triangle_source.hxx>
+#include <haze/gfx/backend/metal/shaders/multi_triangle_source.hxx>
 
 
 namespace haze::mtl
@@ -117,43 +118,42 @@ constexpr void renderer::_draw ( layer const & _layer_, void * _view_ )
         HAZE_CORE_YAP( "renderer::draw : filling vertex buffers..." ) ;
 
         _layer_.for_each(
-                [ & ]( auto const & object )
+        [ & ]( auto const & object )
+        {
+                using object_type = uti::remove_cvref_t< decltype( object ) > ;
+        
+                if constexpr( uti::meta::instantiated_from< object_type, filled_shape > )
                 {
-                        using object_type = uti::remove_cvref_t< decltype( object ) > ;
-                        if constexpr( !uti::meta::instantiated_from< object_type, filled_shape > )
+                        using pixel_type = typename object_type::pixel_type ;
+                        using shape_type = typename object_type::shape_type ;
+        
+                        shape_type const & shape = object.shape() ;
+        
+                        if constexpr( uti::meta::instantiated_from< shape_type, generic_triangle > )
                         {
-
-                        }
-                        else
-                        {
-                                using pixel_type = typename object_type::pixel_type ;
-                                using shape_type = typename object_type::shape_type ;
-
-                                shape_type const & shape = object.shape() ;
-
-                                if constexpr( uti::meta::instantiated_from< shape_type, generic_triangle > )
+                                simd::float3 positions [ 3 ] =
                                 {
-                                        simd::float3 positions [ 3 ] =
-                                        {
-                                                { shape.a_.x(), shape.a_.y(), 0.0 } ,
-                                                { shape.b_.x(), shape.b_.y(), 0.0 } ,
-                                                { shape.c_.x(), shape.c_.y(), 0.0 }
-                                        } ;
-                                        simd::float3 colors [ 3 ] =
-                                        {
-                                                { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f } ,
-                                                { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f } ,
-                                                { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f }
-                                        } ;
-                                        memcpy( vertex_pos_buffer_.data(), positions, sizeof( positions ) ) ;
-                                        memcpy( vertex_col_buffer_.data(),    colors, sizeof(    colors ) ) ;
-
-                                        vertex_pos_buffer_.signal_modified() ;
-                                        vertex_col_buffer_.signal_modified() ;
-                                }
+                                        { shape.a_.x(), shape.a_.y(), 0.0 } ,
+                                        { shape.b_.x(), shape.b_.y(), 0.0 } ,
+                                        { shape.c_.x(), shape.c_.y(), 0.0 }
+                                } ;
+                                simd::float3 colors [ 3 ] =
+                                {
+                                        { 1.0, 0.0, 0.0 } ,
+                                        { 0.0, 1.0, 0.0 } ,
+                                        { 0.0, 0.0, 1.0 } ,
+//                                      { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f } ,
+//                                      { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f } ,
+//                                      { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f }
+                                } ;
+                                memcpy( vertex_pos_buffer_.data(), positions, sizeof( positions ) ) ;
+                                memcpy( vertex_col_buffer_.data(),    colors, sizeof(    colors ) ) ;
+        
+                                vertex_pos_buffer_.signal_modified() ;
+                                vertex_col_buffer_.signal_modified() ;
                         }
                 }
-        ) ;
+        } ) ;
         HAZE_CORE_YAP( "renderer::draw : setting render pass arguments..." ) ;
 
         enc->setVertexBuffer( arg_buffer_, 0, 0 ) ;

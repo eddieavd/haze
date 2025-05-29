@@ -40,8 +40,8 @@ public:
         UTI_NODISCARD constexpr string_view title () const noexcept { return static_cast< _impl const * >( this )-> _title() ; }
         UTI_NODISCARD constexpr auto        shape () const noexcept { return static_cast< _impl const * >( this )-> _shape() ; }
 
-        UTI_NODISCARD constexpr decltype( auto ) raw_window ()       noexcept { return static_cast< _impl       * >( this )->_raw_window() ; }
-        UTI_NODISCARD constexpr decltype( auto ) raw_window () const noexcept { return static_cast< _impl const * >( this )->_raw_window() ; }
+        UTI_NODISCARD constexpr decltype( auto ) impl ()       noexcept { return static_cast< _impl       * >( this )->_impl() ; }
+        UTI_NODISCARD constexpr decltype( auto ) impl () const noexcept { return static_cast< _impl const * >( this )->_impl() ; }
 protected:
         constexpr  window_base () noexcept = default ;
         constexpr ~window_base () noexcept = default ;

@@ -252,14 +252,12 @@ inline void app::app_delegate::applicationDidFinishLaunching ( NS::Notification 
         view_dlgt_->set_on_update( update_ ) ;
         view_->setDelegate( view_dlgt_ ) ;
 
-        HAZE_CORE_INFO( "app::app_delegate::applicationDidFinishLaunching : setting window content view and title..." ) ;
-
-        window_.set_title( "haze::metal" ) ;
-        window_.raw_window()->setContentView( view_ ) ;
+        HAZE_CORE_INFO( "app::app_delegate::applicationDidFinishLaunching : setting window content view..." ) ;
+        window_.impl()->setContentView( view_ ) ;
 
         HAZE_CORE_INFO( "app::app_delegate::applicationDidFinishLaunching : ordering window to front..." ) ;
 
-        window_.raw_window()->makeKeyAndOrderFront( nullptr ) ;
+        window_.impl()->makeKeyAndOrderFront( nullptr ) ;
 
         NS::Application * app = reinterpret_cast< NS::Application * >( _notification_->object() ) ;
         app->activateIgnoringOtherApps( true ) ;
