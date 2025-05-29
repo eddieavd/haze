@@ -14,7 +14,10 @@
 #include <haze/gfx/texture.hxx>
 #include <haze/gfx/renderer_base.hxx>
 
+#include <haze/gfx/backend/metal/shaders/common.h>
+
 #include <haze/gfx/backend/metal/shaders/basic_triangle_source.hxx>
+#include <haze/gfx/backend/metal/shaders/rotating_triangle_source.hxx>
 
 
 namespace haze::mtl
@@ -46,15 +49,23 @@ private:
 
         MTL::Library * shader_lib_ {} ;
 
-        buffer        arg_buffer_ {} ;
-        buffer vertex_pos_buffer_ {} ;
-        buffer vertex_col_buffer_ {} ;
+        buffer         arg_buffer_ {} ;
+        buffer  vertex_pos_buffer_ {} ;
+        buffer  vertex_col_buffer_ {} ;
+
+        uti::array< buffer, max_frames_in_flight > frame_data_buffers_ {} ;
+
+        float angle_ {} ;
+        i32_t frame_ {} ;
+
+        dispatch_semaphore_t semaphore_ ;
 
         constexpr void    _init ()          ;
         constexpr void _release () noexcept ;
 
-        constexpr void    _compile_shaders () ;
-        constexpr void _initialize_buffers () ;
+        constexpr void    _compile_shaders   () ;
+        constexpr void _initialize_buffers   () ;
+        constexpr void _initialize_frame_data() ;
 
         constexpr void _draw ( layer const & _layer_, void * _view_ ) ;
 } ;
@@ -70,10 +81,25 @@ constexpr void renderer::_draw ( layer const & _layer_, void * _view_ )
 
         NS::AutoreleasePool * pool = NS::AutoreleasePool::alloc()->init() ;
 
+        frame_ = ( frame_ + 1 ) % max_frames_in_flight ;
+        MTL::Buffer * frame_data_buffer = frame_data_buffers_[ frame_ ] ;
+
         HAZE_CORE_YAP( "renderer::draw : initializing command buffer..." ) ;
         MTL::CommandBuffer * cmd = cmd_q_->commandBuffer() ;
         if( !cmd ) { HAZE_CORE_FATAL( "renderer::draw : failed initializing command buffer!" ) ; return ; }
         HAZE_CORE_YAP( "renderer::draw : command buffer initialized" ) ;
+
+        HAZE_CORE_YAP( "renderer::draw : waiting for GPU to process in-flight frames..." ) ;
+        dispatch_semaphore_wait( semaphore_, DISPATCH_TIME_FOREVER ) ;
+        HAZE_CORE_YAP( "renderer::draw : wait over" ) ;
+
+        renderer * r_ptr = this ;
+        cmd->addCompletedHandler( ^void( MTL::CommandBuffer * _cmd_ ){ dispatch_semaphore_signal( r_ptr->semaphore_ ) ; } ) ;
+
+        HAZE_CORE_YAP( "renderer::draw : updating per-frame data..." ) ;
+
+        reinterpret_cast< frame_data * >( frame_data_buffer->contents() )->angle = ( angle_ += 0.01f ) ;
+        frame_data_buffer->didModifyRange( NS::Range::Make( 0, sizeof( frame_data ) ) ) ;
 
         HAZE_CORE_YAP( "renderer::draw : getting render pass descriptor..." ) ;
         MTL::RenderPassDescriptor * rpd = view->currentRenderPassDescriptor() ;
@@ -88,7 +114,7 @@ constexpr void renderer::_draw ( layer const & _layer_, void * _view_ )
         enc->setRenderPipelineState( rpstate_ ) ;
         HAZE_CORE_YAP( "renderer::draw : render pipeline state set" ) ;
 
-        HAZE_CORE_YAP( "renderer::draw : translating layer into vertices..." ) ;
+        HAZE_CORE_YAP( "renderer::draw : filling vertex buffers..." ) ;
 
         _layer_.for_each(
                 [ & ]( auto const & object )
@@ -115,16 +141,10 @@ constexpr void renderer::_draw ( layer const & _layer_, void * _view_ )
                                         } ;
                                         simd::float3 colors [ 3 ] =
                                         {
-                                                { static_cast< float >( object.fill()[ pixel_type:: RED ] ) / 255.0f, static_cast< float >( object.fill()[ pixel_type::GREEN ] / 255.0f ) ,
-                                                  static_cast< float >( object.fill()[ pixel_type::BLUE ] ) / 255.0f } ,
-
-                                                { static_cast< float >( object.fill()[ pixel_type:: RED ] ) / 255.0f, static_cast< float >( object.fill()[ pixel_type::GREEN ] / 255.0f ) ,
-                                                  static_cast< float >( object.fill()[ pixel_type::BLUE ] ) / 255.0f } ,
-
-                                                { static_cast< float >( object.fill()[ pixel_type:: RED ] ) / 255.0f, static_cast< float >( object.fill()[ pixel_type::GREEN ] / 255.0f ) ,
-                                                  static_cast< float >( object.fill()[ pixel_type::BLUE ] ) / 255.0f }
+                                                { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f } ,
+                                                { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f } ,
+                                                { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f }
                                         } ;
-
                                         memcpy( vertex_pos_buffer_.data(), positions, sizeof( positions ) ) ;
                                         memcpy( vertex_col_buffer_.data(),    colors, sizeof(    colors ) ) ;
 
@@ -134,12 +154,13 @@ constexpr void renderer::_draw ( layer const & _layer_, void * _view_ )
                         }
                 }
         ) ;
-
         HAZE_CORE_YAP( "renderer::draw : setting render pass arguments..." ) ;
 
         enc->setVertexBuffer( arg_buffer_, 0, 0 ) ;
         enc->useResource( vertex_pos_buffer_, MTL::ResourceUsageRead ) ;
         enc->useResource( vertex_col_buffer_, MTL::ResourceUsageRead ) ;
+
+        enc->setVertexBuffer( frame_data_buffer, 0, 1 ) ;
 
         HAZE_CORE_YAP( "renderer::draw : encoding draw call..." ) ;
 
@@ -166,6 +187,7 @@ constexpr void renderer::_release () noexcept
                             arg_buffer_       .release() ;
                             vertex_pos_buffer_.release() ;
                             vertex_col_buffer_.release() ;
+        for( auto & buff : frame_data_buffers_ ) buff.release() ;
         if(    rpstate_ ) { rpstate_         ->release() ;    rpstate_ = nullptr ; }
         if(      cmd_q_ ) { cmd_q_           ->release() ;      cmd_q_ = nullptr ; }
 }
@@ -185,6 +207,9 @@ constexpr void renderer::_init ()
         _compile_shaders() ;
         HAZE_CORE_INFO( "renderer::init : allocating buffers..." ) ;
         _initialize_buffers() ;
+        _initialize_frame_data() ;
+
+        semaphore_ = dispatch_semaphore_create( max_frames_in_flight ) ;
         HAZE_CORE_INFO( "renderer::init : finished" ) ;
 }
 
@@ -196,7 +221,7 @@ constexpr void renderer::_compile_shaders ()
 
         using NS::StringEncoding::UTF8StringEncoding ;
 
-        string_view shader_source = ::haze::mtl::basic_triangle_shader_source ;
+        string_view shader_source = ::haze::mtl::rotating_triangle_shader_source ;
 
         NS::Error * error = nullptr ;
         MTL::Library * library = ctx_.device()->newLibrary( NS::String::string( shader_source.data(), UTF8StringEncoding ), nullptr, &error ) ;
@@ -244,14 +269,14 @@ constexpr void renderer::_initialize_buffers ()
         static constexpr ssize_t pos_data_size { 3 * sizeof( simd::float3 ) } ;
         static constexpr ssize_t col_data_size { 3 * sizeof( simd::float3 ) } ;
 
-        HAZE_CORE_INFO( "renderer::intialize_buffers : allocating buffer of %ld bytes...", pos_data_size ) ;
         vertex_pos_buffer_ = ctx_.create_buffer( pos_data_size, storage_mode::managed ) ;
-
-        HAZE_CORE_INFO( "renderer::intialize_buffers : allocating buffer of %ld bytes...", col_data_size ) ;
         vertex_col_buffer_ = ctx_.create_buffer( col_data_size, storage_mode::managed ) ;
 
         if( !vertex_pos_buffer_.is_loaded() ) { HAZE_CORE_FATAL( "renderer::initialize_buffers : failed to allocate vertex position buffer!" ) ; return ; }
         if( !vertex_col_buffer_.is_loaded() ) { HAZE_CORE_FATAL( "renderer::initialize_buffers : failed to allocate vertex color buffer!"    ) ; return ; }
+
+        HAZE_CORE_INFO( "renderer::intialize_buffers : allocated %ld bytes for vertex position buffer", pos_data_size ) ;
+        HAZE_CORE_INFO( "renderer::intialize_buffers : allocated %ld bytes for vertex color buffer"   , col_data_size ) ;
 
         using NS::StringEncoding::UTF8StringEncoding ;
 
@@ -267,12 +292,11 @@ constexpr void renderer::_initialize_buffers ()
 
         if( !arg_encoder ) { HAZE_CORE_FATAL( "renderer::initialize_buffers : failed creating argument encoder!" ) ; return ; }
 
-        HAZE_CORE_INFO( "renderer::intialize_buffers : allocating argument buffer..." ) ;
         arg_buffer_ = ctx_.create_buffer( arg_encoder->encodedLength(), storage_mode::managed ) ;
 
         if( !arg_buffer_.is_loaded() ) { HAZE_CORE_FATAL( "renderer::initialize_buffers : failed to allocate argument buffer!" ) ; return ; }
 
-        HAZE_CORE_INFO( "renderer::initialize_buffers : allocated argument buffer of %ld bytes", arg_buffer_.allocated_size() ) ;
+        HAZE_CORE_INFO( "renderer::initialize_buffers : allocated %ld byte argument buffer", arg_buffer_.allocated_size() ) ;
 
         HAZE_CORE_INFO( "renderer::intialize_buffers : initializing argument buffer..." ) ;
         arg_encoder->setArgumentBuffer( arg_buffer_, 0 ) ;
@@ -286,6 +310,19 @@ constexpr void renderer::_initialize_buffers ()
         arg_encoder->release() ;
 
         HAZE_CORE_INFO( "renderer::intialize_buffers : finished" ) ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr void renderer::_initialize_frame_data ()
+{
+        HAZE_CORE_INFO_S( "renderer::initialize_frame_data" ) ;
+
+        for( i32_t i = 0; i < max_frames_in_flight; ++i )
+        {
+                frame_data_buffers_[ i ] = ctx_.create_buffer( sizeof( frame_data ), storage_mode::managed ) ;
+        }
+        HAZE_CORE_INFO  ( "renderer::initialize_frame_data : finished" ) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -39,8 +39,6 @@ using pixel_type = typename texture_type::pixel_type ;
 
 using image_type = haze::generic_image< pixel_type, point_type > ;
 
-constexpr MTL::RenderPipelineState * init_render_pipeline_state ( MTL::Device * _device_ ) noexcept ;
-
 
 using triangle = haze::filled_shape< pixel_type, haze::generic_triangle< point_type > > ;
 
@@ -51,9 +49,9 @@ int main ( int argc, char ** argv )
         static constexpr triangle tri_1 =
         {
                 {
-                        { -0.8f,  0.8f, 0.0f },
-                        {  0.0f, -0.8f, 0.0f },
-                        { +0.8f,  0.8f, 0.0f }
+                        { -1.0f, +1.0f, 0.0f },
+                        {  0.0f, -1.0f, 0.0f },
+                        { +1.0f, +1.0f, 0.0f }
                 }, 
                 pixel_type{ 255, 18, 18, 255 }
         } ;
@@ -69,12 +67,11 @@ int main ( int argc, char ** argv )
                 triangle & tri = app_layer.get_object< triangle >( 0 ) ;
 
                 --tri.fill()[ pixel_type:: RED ] ;
-                ++tri.fill()[ pixel_type::BLUE ] ;
         } ;
 
-        HAZE_INFO( "main : setting window size and title..." ) ;
-
+        HAZE_INFO( "main : setting window size to 800x800" ) ;
         app.get_window().set_size( 800, 800 ) ;
+        HAZE_INFO( "main : setting window title to haze::app" ) ;
         app.get_window().set_title( "haze::app" ) ;
 
         HAZE_INFO( "main : setting on_update handler..." ) ;
