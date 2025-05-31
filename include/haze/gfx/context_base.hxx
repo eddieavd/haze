@@ -24,6 +24,8 @@ class context_base
 {
         using _impl = ContextImpl ;
 public:
+        static constexpr auto initialize () { _impl ctx ; ctx.init() ; return ctx ; }
+
         constexpr void    init ()          { static_cast< _impl * >( this )->   _init() ; }
         constexpr void release () noexcept { static_cast< _impl * >( this )->_release() ; }
 

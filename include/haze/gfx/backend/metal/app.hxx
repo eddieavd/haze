@@ -161,6 +161,7 @@ inline app::app_delegate::~app_delegate () noexcept
         if( view_ ) view_ ->release() ;
         window_.release() ;
         if( view_dlgt_ ) delete view_dlgt_ ;
+        ctx_.release() ;
 
         HAZE_CORE_DBG( "app::app_delegate : destroyed" ) ;
 }

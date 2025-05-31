@@ -183,6 +183,8 @@ constexpr void renderer::_draw ( layer const & _layer_, void * _view_ )
 
 constexpr void renderer::_release () noexcept
 {
+        if( semaphore_ ) { dispatch_release( semaphore_ ) ; semaphore_ = nullptr ; }
+
         if( shader_lib_ ) { shader_lib_      ->release() ; shader_lib_ = nullptr ; }
                             arg_buffer_       .release() ;
                             vertex_pos_buffer_.release() ;
