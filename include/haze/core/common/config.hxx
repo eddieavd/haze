@@ -6,6 +6,10 @@
 
 #pragma once
 
+// #ifndef UTI_HAS_STL
+// #define UTI_HAS_STL
+// #endif
+
 #include <uti/core/util/config.hxx>
 
 ////////////////////////////////////////////////////////////////////////////////

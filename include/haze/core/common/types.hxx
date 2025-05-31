@@ -42,11 +42,11 @@ using ssize_t = uti::ssize_t ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-using memory_resource = uti::malloc_resource ;
-//using memory_resource = uti::static_freelist_resource< 10 * 1024 * 1024 > ;
+using core_memory_resource = uti::malloc_resource ;
+//using core_memory_resource = uti::static_freelist_resource< 10 * 1024 * 1024 > ;
 
 template< typename T >
-using allocator = uti::allocator< T, memory_resource > ;
+using allocator = uti::allocator< T, core_memory_resource > ;
 
 // template< typename T >
 // using allocator = uti::new_allocator< T > ;

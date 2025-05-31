@@ -132,7 +132,7 @@ constexpr void window::set_title ( string_view _title_ ) noexcept
 
         if( window_ ) window_->setTitle( NS::String::string( title_.c_str(), NS::StringEncoding::UTF8StringEncoding ) ) ;
 
-        HAZE_CORE_INFO( "window::set_title : window title set to " SV_FMT, SV_ARG( _title_ ) ) ;
+        HAZE_CORE_INFO( "window::set_title : window title set to '" SV_FMT "'", SV_ARG( _title_ ) ) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -160,7 +160,7 @@ constexpr void window::_init () noexcept
         ) ;
         if( !window_ ) HAZE_CORE_FATAL( "window::init : failed to initialize window!" ) ;
 
-        HAZE_CORE_INFO( "window::init : setting window title to " SV_FMT" ...", SV_ARG( title_ ) ) ;
+        HAZE_CORE_INFO( "window::init : setting window title to '" SV_FMT"' ...", SV_ARG( title_ ) ) ;
 
         window_->setTitle( NS::String::string( title_.c_str(), NS::StringEncoding::UTF8StringEncoding ) ) ;
 

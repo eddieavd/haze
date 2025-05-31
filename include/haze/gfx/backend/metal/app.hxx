@@ -12,11 +12,11 @@
 
 #include <haze/gfx/backend/metal/common.hxx>
 #include <haze/gfx/backend/metal/compat.hxx>
-#include <haze/gfx/backend/metal/basic_renderer.hxx>
 
 #include <haze/gfx/context.hxx>
 
 #include <haze/app/window.hxx>
+#include <haze/gfx/renderer_api.hxx>
 #include <haze/gfx/renderer.hxx>
 #include <haze/app/app_base.hxx>
 
@@ -51,8 +51,8 @@ class app : public app_base< app >
 
                 constexpr void release () noexcept { renderer_.release() ; }
         private:
-                renderer renderer_ ;
-                layer       layer_ ;
+                renderer_api renderer_ ;
+                layer           layer_ ;
 
                 std::function< void( layer & ) > update_ ;
         } ;
@@ -139,7 +139,8 @@ inline void app::view_delegate::drawInMTKView ( MTK::View * _view_ )
         [[ maybe_unused ]]
         static bool init_renderer = [ & ]
         {
-                renderer_.init() ;
+                HAZE_CORE_INFO( "app::view_delegate::drawInMTKView : first draw call, initializing renderer..." ) ;
+                renderer_.init( 64 * 1024 * 1024, 64 * 1024 * 1024 ) ;
                 return true ;
         }() ;
 

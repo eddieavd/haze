@@ -27,3 +27,171 @@ UTI_DIAGS_DISABLE( -Wgnu-anonymous-struct )
 UTI_DIAGS_POP()
 
 #include <simd/simd.h>
+
+
+namespace haze::mtl
+{
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+enum class placement_strategy
+{
+////////////////////////////////////////////////////////////////////////////////
+        /// automatic
+        /// - let haze determine the location of resources allocated from the heap
+        /// - use for temporary resources which are written to often
+        automatic = MTL::HeapTypeAutomatic ,
+////////////////////////////////////////////////////////////////////////////////
+        /// placement
+        /// - for direct control over memory use and fragmentation
+        /// - use for long living, rarely changed resources
+        placement = MTL::HeapTypePlacement ,
+
+////////////////////////////////////////////////////////////////////////////////
+        /// sparse
+        /// - only used for creating sparse textures
+        sparse = MTL::HeapTypeSparse ,
+////////////////////////////////////////////////////////////////////////////////
+        count ,
+} ;
+
+constexpr string_view placement_strategy_string ( placement_strategy _strategy_ ) noexcept
+{
+        switch( _strategy_ )
+        {
+                case placement_strategy::automatic : return "automatic" ;
+                case placement_strategy::placement : return "placement" ;
+                case placement_strategy::   sparse : return    "sparse" ;
+                default                            : return   "unknown" ;
+        }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+enum class cpu_cache_mode
+{
+////////////////////////////////////////////////////////////////////////////////
+        /// dflt
+        /// - default mode
+        /// - guarantees reads and writes are executed in the expected order
+        dflt = MTL::CPUCacheModeDefaultCache ,
+////////////////////////////////////////////////////////////////////////////////
+        /// write
+        /// Write-combined memory is optimized for resources that the CPU writes into, but never reads.
+        /// On some implementations, writes may bypass caches to avoid cache pollution. Read actions may perform very poorly.
+        ///
+        /// Applications should use write combining only if writing to normally cached buffers
+        /// is known to cause performance issues due to cache pollution,
+        /// as write-combined memory can have surprising performance pitfalls.
+        /// Another approach is to use non-temporal writes to normally cached memory (STNP on ARMv8, _mm_stream_* on x86_64).
+        ///     https://developer.apple.com/documentation/metal/mtlcpucachemode/writecombined
+        write = MTL::CPUCacheModeWriteCombined ,
+////////////////////////////////////////////////////////////////////////////////
+        count ,
+} ;
+
+constexpr string_view cpu_cache_mode_string ( cpu_cache_mode _cache_mode_ ) noexcept
+{
+        switch( _cache_mode_ )
+        {
+                case cpu_cache_mode:: dflt : return "default" ;
+                case cpu_cache_mode::write : return   "write" ;
+                default                    : return "unknown" ;
+        }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+enum class storage_mode
+{
+        shared      = MTL::StorageModeShared     ,
+        managed     = MTL::StorageModeManaged    ,
+        gpu_private = MTL::StorageModePrivate    ,
+        none        = MTL::StorageModeMemoryless ,
+} ;
+
+constexpr string_view storage_mode_string ( storage_mode _storage_mode_ ) noexcept
+{
+        switch( _storage_mode_ )
+        {
+                case storage_mode::       none : return  "memoryless" ;
+                case storage_mode::     shared : return      "shared" ;
+                case storage_mode::    managed : return     "managed" ;
+                case storage_mode::gpu_private : return "gpu_private" ;
+                default                        : return     "unknown" ;
+        }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+enum class hazard_tracking_mode
+{
+        default_tracking = MTL::HazardTrackingModeDefault ,
+////////////////////////////////////////////////////////////////////////////////
+        /// untracked
+        /// Metal does not do any dependency analysis on untracked resources.
+        /// You are responsible for ensuring that resources are modified safely.
+        untracked = MTL::HazardTrackingModeUntracked ,
+////////////////////////////////////////////////////////////////////////////////
+        /// tracked
+        /// For a resource, Metal tracks dependencies on any accesses to the resource.
+        /// If you submit a command that modifies the resource,
+        /// Metal delays that command from executing until prior commands accessing that resource are complete,
+        /// and prevents future commands from executing until the modifications are complete.
+        ///
+        /// For a heap, Metal tracks dependencies on accesses to any resources on the heap.
+        /// If you submit a command that modifies a resource on a heap,
+        /// Metal delays that command from executing until prior commands accessing the heap’s resources are complete,
+        /// and prevents future commands accessing the heap’s resources from executing until the modifications are complete.
+        ///
+        /// For better performance, use untracked resources and synchronize access yourself.
+        tracked = MTL::HazardTrackingModeTracked ,
+////////////////////////////////////////////////////////////////////////////////
+        count ,
+} ;
+
+constexpr string_view hazard_tracking_mode_string ( hazard_tracking_mode _tracking_mode_ ) noexcept
+{
+        switch( _tracking_mode_ )
+        {
+                case hazard_tracking_mode::untracked : return "untracked" ;
+                case hazard_tracking_mode::  tracked : return   "tracked" ;
+                default                              : return   "unknown" ;
+        }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+enum class sparse_page_size
+{
+        size_16  = MTL::SparsePageSize16  ,
+        size_64  = MTL::SparsePageSize64  ,
+        size_256 = MTL::SparsePageSize256 ,
+        count    ,
+} ;
+
+constexpr i32_t sparse_page_size_val ( sparse_page_size _cache_mode_ ) noexcept
+{
+        switch( _cache_mode_ )
+        {
+                case sparse_page_size::size_16  : return  16 ;
+                case sparse_page_size::size_64  : return  64 ;
+                case sparse_page_size::size_256 : return 256 ;
+                default                         : return  16 ;
+        }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct resource_options
+{
+        storage_mode                 storage_mode_ ;
+        cpu_cache_mode             cpu_cache_mode_ ;
+        hazard_tracking_mode hazard_tracking_mode_ ;
+} ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+} // namespace haze::mtl

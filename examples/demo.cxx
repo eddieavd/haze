@@ -26,48 +26,40 @@
 
 #include <haze/gfx/context.hxx>
 #include <haze/gfx/buffer.hxx>
-#include <haze/gfx/texture.hxx>
 
 #include <haze/app/window.hxx>
 #include <haze/app/app.hxx>
 
 
-using texture_type = haze::texture ;
+using pixel_type = haze::rgba_u8_pixel ;
+using   triangle = haze::filled_shape< pixel_type, haze::generic_triangle< haze::fpoint_3d > > ;
 
-using point_type = typename texture_type::point_type ;
-using pixel_type = typename texture_type::pixel_type ;
+static constexpr triangle tri =
+{
+        {
+                {  0.000f, +1.0f, 0.0f } ,
+                { -0.866f, -0.5f, 0.0f } ,
+                { +0.866f, -0.5f, 0.0f } ,
+        } ,
+        pixel_type{ 255, 18, 18, 255 } ,
+} ;
 
-using image_type = haze::generic_image< pixel_type, point_type > ;
-
-
-using triangle = haze::filled_shape< pixel_type, haze::generic_triangle< point_type > > ;
+static constexpr auto on_update =
+        []( haze::layer & app_layer )
+        {
+                if( app_layer.objects().empty() ) app_layer.add_object( tri ) ;
+        } ;
 
 int main ( int argc, char ** argv )
 {
         haze::log::init( argc, argv ) ;
 
-        static constexpr triangle tri_1 =
-        {
-                {
-                        {  0.0f, +1.0f, 0.0f },
-                        { -0.866f, -0.5f, 0.0f },
-                        { +0.866f, -0.5f, 0.0f }
-                }, 
-                pixel_type{ 255, 18, 18, 255 }
-        } ;
-
-        static constexpr auto on_update =
-        [ & ]( haze::layer & app_layer )
-        {
-                if( app_layer.objects().empty() ) app_layer.add_object( tri_1 ) ;
-        } ;
-
-        HAZE_INFO( "main : creating app..." ) ;
+        HAZE_INFO( "main : initializing app..." ) ;
 
         haze::app app ;
 
         app.get_window().set_size( 800, 800 ) ;
-        app.get_window().set_title( "haze::app" ) ;
+        app.get_window().set_title( "haze::demo" ) ;
 
         app.on_update( on_update ) ;
 
@@ -75,6 +67,35 @@ int main ( int argc, char ** argv )
 
         app.run() ;
 
+        HAZE_INFO( "main : done" ) ;
+
+
+
+
 
         return 0 ;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
