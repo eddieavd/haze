@@ -19,8 +19,8 @@ namespace haze::mtl
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class metal_memory_resource ;
-class               context ;
+class gpu_memory_resource ;
+class             context ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -34,7 +34,7 @@ public:
         using  _base::_base ;
         friend _base        ;
 
-        constexpr buffer ( MTL::Buffer * _buffer_, metal_memory_resource & _owner_, context & _ctx_ ) noexcept
+        constexpr buffer ( MTL::Buffer * _buffer_, gpu_memory_resource & _owner_, context & _ctx_ ) noexcept
                 : buffer_{ _buffer_ }, owner_( &_owner_ ), ctx_( &_ctx_ ) {}
 
         constexpr buffer ( buffer const &  _other_ ) noexcept : buffer_( _other_.buffer_ ), owner_( _other_.owner_ ), ctx_( _other_.ctx_ ) {         buffer_->retain() ; }
@@ -59,16 +59,26 @@ public:
 //      }
 private:
         MTL::Buffer           * buffer_ ;
-        metal_memory_resource *  owner_ ;
+        gpu_memory_resource *  owner_ ;
         context               *    ctx_ ;
 
         constexpr bool _is_loaded () const noexcept { return buffer_ != nullptr ; }
 
-        constexpr void _release () noexcept { if( buffer_ ) { buffer_->release() ; buffer_ = nullptr ; } }
-
-        constexpr void _init ( MTL::Buffer * _buffer_, metal_memory_resource * _owner_, context * _ctx_ ) noexcept
+        constexpr void _release () noexcept
         {
-                if( buffer_ ) { HAZE_CORE_ERROR( "buffer::init : called on already initialized buffer" ) ; return ; }
+                HAZE_CORE_TRACE_S( "mtl::buffer::release" ) ;
+                if( buffer_ )
+                {
+                        buffer_->release() ;
+                        buffer_ = nullptr ;
+                        HAZE_CORE_TRACE( "mtl::buffer::release : buffer released" ) ;
+                }
+        }
+
+        constexpr void _init ( MTL::Buffer * _buffer_, gpu_memory_resource * _owner_, context * _ctx_ ) noexcept
+        {
+                HAZE_CORE_TRACE_S( "mtl::buffer::init" ) ;
+                if( buffer_ ) { HAZE_CORE_ERROR( "mtl::buffer::init : called on already initialized buffer" ) ; return ; }
 
                 buffer_ = _buffer_ ;
                 owner_  =  _owner_ ;
@@ -80,8 +90,8 @@ private:
         constexpr MTL::Buffer       * _impl ()       noexcept { return buffer_ ; }
         constexpr MTL::Buffer const * _impl () const noexcept { return buffer_ ; }
 
-        constexpr metal_memory_resource       * owner ()       noexcept { return owner_ ; }
-        constexpr metal_memory_resource const * owner () const noexcept { return owner_ ; }
+        constexpr gpu_memory_resource       * owner ()       noexcept { return owner_ ; }
+        constexpr gpu_memory_resource const * owner () const noexcept { return owner_ ; }
 
         constexpr void       * _data ()       noexcept { return buffer_->contents() ; }
         constexpr void const * _data () const noexcept { return buffer_->contents() ; }

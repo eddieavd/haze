@@ -20,7 +20,7 @@ namespace haze
 
 struct allocator_config
 {
-        string_view                          name_ ;
+        string                               name_ ; // replace with small_string, force smaller name, avoid allocation
         placement_strategy     placement_strategy_ ;
         cpu_cache_mode             cpu_cache_mode_ ;
         storage_mode                 storage_mode_ ;
@@ -32,7 +32,7 @@ struct allocator_config
 
 static constexpr allocator_config dynamic_allocator_config =
 {
-        .                name_ = "dynamic" ,
+        .                name_ = string( "dynamic" ) ,
         .  placement_strategy_ = haze::mtl::  placement_strategy::automatic ,
         .      cpu_cache_mode_ = haze::mtl::      cpu_cache_mode::     dflt ,
         .        storage_mode_ = haze::mtl::        storage_mode::   shared ,
@@ -41,7 +41,7 @@ static constexpr allocator_config dynamic_allocator_config =
 } ;
 static constexpr allocator_config static_allocator_config =
 {
-        .                name_ = "static" ,
+        .                name_ = string( "static" ) ,
         .  placement_strategy_ = haze::mtl::  placement_strategy::placement ,
         .      cpu_cache_mode_ = haze::mtl::      cpu_cache_mode::     dflt ,
         .        storage_mode_ = haze::mtl::        storage_mode::   shared ,
@@ -50,7 +50,7 @@ static constexpr allocator_config static_allocator_config =
 } ;
 static constexpr allocator_config writeonly_dynamic_allocator_config =
 {
-        .                name_ = "writeonly_dynamic" ,
+        .                name_ = string( "writeonly_dynamic" ) ,
         .  placement_strategy_ = haze::mtl::  placement_strategy:: automatic  ,
         .      cpu_cache_mode_ = haze::mtl::      cpu_cache_mode::     write  ,
         .        storage_mode_ = haze::mtl::        storage_mode::gpu_private ,
@@ -59,7 +59,7 @@ static constexpr allocator_config writeonly_dynamic_allocator_config =
 } ;
 static constexpr allocator_config writeonly_static_allocator_config =
 {
-        .                name_ = "writeonly_static" ,
+        .                name_ = string( "writeonly_static" ) ,
         .  placement_strategy_ = haze::mtl::  placement_strategy:: placement  ,
         .      cpu_cache_mode_ = haze::mtl::      cpu_cache_mode::     write  ,
         .        storage_mode_ = haze::mtl::        storage_mode::gpu_private ,
@@ -68,7 +68,7 @@ static constexpr allocator_config writeonly_static_allocator_config =
 } ;
 static constexpr allocator_config sparse16_allocator_config =
 {
-        .                name_ = "sparse16" ,
+        .                name_ = string( "sparse16" ) ,
         .  placement_strategy_ = haze::mtl::  placement_strategy::automatic ,
         .      cpu_cache_mode_ = haze::mtl::      cpu_cache_mode::     dflt ,
         .        storage_mode_ = haze::mtl::        storage_mode::   shared ,
@@ -77,7 +77,7 @@ static constexpr allocator_config sparse16_allocator_config =
 } ;
 static constexpr allocator_config sparse64_allocator_config =
 {
-        .                name_ = "sparse64" ,
+        .                name_ = string( "sparse64" ) ,
         .  placement_strategy_ = haze::mtl::  placement_strategy::automatic ,
         .      cpu_cache_mode_ = haze::mtl::      cpu_cache_mode::     dflt ,
         .        storage_mode_ = haze::mtl::        storage_mode::   shared ,
@@ -86,7 +86,7 @@ static constexpr allocator_config sparse64_allocator_config =
 } ;
 static constexpr allocator_config sparse256_allocator_config =
 {
-        .                name_ = "sparse256" ,
+        .                name_ = string( "sparse256" ) ,
         .  placement_strategy_ = haze::mtl::  placement_strategy::automatic ,
         .      cpu_cache_mode_ = haze::mtl::      cpu_cache_mode::     dflt ,
         .        storage_mode_ = haze::mtl::        storage_mode::   shared ,

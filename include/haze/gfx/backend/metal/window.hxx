@@ -68,6 +68,7 @@ private:
 constexpr window::window ( size_type _width_, size_type _height_, string_view _title_ ) noexcept
         : shape_{ { 100, 100 }, { static_cast< CGFloat >( _width_ ), static_cast< CGFloat >( _height_ ) } }
 {
+        HAZE_CORE_TRACE_S( "mtl::window::ctor_body" ) ;
         set_size ( _width_, _height_ ) ;
         set_title( _title_           ) ;
 }
@@ -79,6 +80,7 @@ constexpr window::window ( window const & _other_ ) noexcept
         , title_ ( _other_. title_ )
         , window_{ _other_.window_ }
 {
+        HAZE_CORE_TRACE_S( "mtl::window : ctor_copy_body" ) ;
         window_->retain() ;
 }
 
@@ -89,6 +91,7 @@ constexpr window::window ( window && _other_ ) noexcept
         , title_ ( UTI_MOVE( _other_.title_ ) )
         , window_{ _other_.window_ }
 {
+        HAZE_CORE_TRACE_S( "mtl::window : ctor_move_body" ) ;
         _other_.window_ = nullptr ;
 }
 
@@ -96,6 +99,7 @@ constexpr window::window ( window && _other_ ) noexcept
 
 constexpr window & window::operator= ( window const & _other_ ) noexcept
 {
+        HAZE_CORE_TRACE_S( "mtl::window : assign_copy_body" ) ;
         _release() ;
 
         shape_  = _other_. shape_ ;
@@ -111,6 +115,7 @@ constexpr window & window::operator= ( window const & _other_ ) noexcept
 
 constexpr window & window::operator= ( window && _other_ ) noexcept
 {
+        HAZE_CORE_TRACE_S( "mtl::window : assign_move_body" ) ;
         _release() ;
 
         shape_  = _other_. shape_ ;
@@ -132,39 +137,35 @@ constexpr void window::set_title ( string_view _title_ ) noexcept
 
         if( window_ ) window_->setTitle( NS::String::string( title_.c_str(), NS::StringEncoding::UTF8StringEncoding ) ) ;
 
-        HAZE_CORE_INFO( "window::set_title : window title set to '" SV_FMT "'", SV_ARG( _title_ ) ) ;
+        HAZE_CORE_DBG( "mtl::window::set_title : window title set to '" SV_FMT "'", SV_ARG( title_ ) ) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 constexpr void window::set_size ( size_type _width_, size_type _height_ ) noexcept
 {
-        if( window_ != nullptr ) { HAZE_CORE_ERROR( "window::set_size : can not set size on existing window" ) ; return ; }
+        if( window_ != nullptr ) { HAZE_CORE_ERROR( "mtl::window::set_size : can not set size on existing window" ) ; return ; }
 
         shape_  = { { 100, 100 }, { static_cast< CGFloat >( _width_ ), static_cast< CGFloat >( _height_ ) } } ;
 
-        HAZE_CORE_INFO( "window::set_size : window size set to %ldx%ld", _width_, _height_ ) ;
+        HAZE_CORE_DBG( "mtl::window::set_size : window size set to %ldx%ld", _width_, _height_ ) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 constexpr void window::_init () noexcept
 {
-        HAZE_CORE_INFO( "window::init : initializing window with resolution %.fx%.f ...", shape_.size.width, shape_.size.height ) ;
-
         window_ = NS::Window::alloc()->init(
                 shape_,
                 NS::WindowStyleMaskClosable | NS::WindowStyleMaskTitled,
                 NS::BackingStoreBuffered,
                 false
         ) ;
-        if( !window_ ) HAZE_CORE_FATAL( "window::init : failed to initialize window!" ) ;
-
-        HAZE_CORE_INFO( "window::init : setting window title to '" SV_FMT"' ...", SV_ARG( title_ ) ) ;
+        if( !window_ ) HAZE_CORE_FATAL( "mtl::window::init : failed to initialize window!" ) ;
 
         window_->setTitle( NS::String::string( title_.c_str(), NS::StringEncoding::UTF8StringEncoding ) ) ;
 
-        HAZE_CORE_INFO( "window::init : finished" ) ;
+        HAZE_CORE_TRACE( "mtl::window::init : initialized window '" SV_FMT "'with resolution %.fx%.f", SV_ARG( title_ ), shape_.size.width, shape_.size.height ) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

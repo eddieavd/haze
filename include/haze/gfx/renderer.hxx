@@ -65,13 +65,15 @@ private:
 constexpr renderer::renderer ()
         : ctx_( context::create_initialized() )
         , api_( ctx_ )
-{}
+{
+        HAZE_CORE_TRACE_S( "renderer::ctor_body" ) ;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
 constexpr void renderer::release () noexcept
 {
-        HAZE_CORE_INFO_S( "renderer::release" ) ;
+        HAZE_CORE_TRACE_S( "renderer::release" ) ;
         api_.release() ;
         ctx_.release() ;
 }

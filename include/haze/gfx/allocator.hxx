@@ -13,7 +13,7 @@
 #if defined( HAZE_USE_METAL )
 
 #include <haze/gfx/backend/metal/allocator.hxx>
-namespace haze::_detail { using gpu_memory_resource_impl = ::haze::mtl::metal_memory_resource ; }
+namespace haze::_detail { using gpu_memory_resource_impl = ::haze::mtl::gpu_memory_resource ; }
 
 #elif defined( HAZE_USE_OPENGL )
 
