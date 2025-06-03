@@ -23,7 +23,7 @@
 #define HAZE_LOG_LVL_FATAL -3
 
 #ifndef HAZE_LOG_LVL
-#define HAZE_LOG_LVL HAZE_LOG_LVL_INFO
+#define HAZE_LOG_LVL HAZE_LOG_LVL_TRACE
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////

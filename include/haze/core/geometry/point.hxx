@@ -35,7 +35,7 @@ struct generic_point_nd
         constexpr generic_point_nd () noexcept = default ;
 
         template< uti::meta::arithmetic... Args >
-                requires( sizeof...( Args ) == dimensions &&
+                requires( sizeof...( Args ) <= dimensions &&
                           uti::conjunction_v< uti::is_convertible< Args, value_type >... > )
         constexpr generic_point_nd ( Args... _args_ ) noexcept
                 : coords{ static_cast< value_type >( _args_ )... }
@@ -137,7 +137,7 @@ struct generic_point_nd
         UTI_NODISCARD constexpr bool operator== ( generic_point_nd const & _other_ ) const noexcept
         {
                 bool eq { true } ;
-                for_each( [ & ]( ssize_t idx, generic_point_nd const & other ){ if( coords[ idx ] != other.coords[ idx ] ) eq = false ; }, _other_ ) ;
+                for_each( [ & ]( ssize_t idx, generic_point_nd const & other ){ if( coords[ idx ] != other.coords[ idx ] ) eq = false ; }, _other_ ) ; // I_CAN_FIX_HER: early return
                 return eq ;
         }
         UTI_NODISCARD constexpr bool operator!= ( generic_point_nd const & _other_ ) const noexcept

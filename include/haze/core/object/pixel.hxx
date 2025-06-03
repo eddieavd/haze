@@ -71,8 +71,8 @@ enum class pixel_format
 
 ////////////////////////////////////////////////////////////////////////////////
 
-template< uti::meta::arithmetic T, ssize_t Channels >
-struct generic_pixel
+template< uti::meta::arithmetic T, ssize_t Channels > // BIKESHED: pixel as just a 'special' type of point ?
+struct generic_pixel                                 //            would remove some code duplication as well
 {
         using value_type = T ;
 

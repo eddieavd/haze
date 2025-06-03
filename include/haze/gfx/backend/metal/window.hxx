@@ -8,11 +8,18 @@
 
 #include <haze/core/common/types.hxx>
 
-#include <haze/gfx/backend/metal/common.hxx>
-#include <haze/gfx/backend/metal/compat.hxx>
+#include <haze/core/object/meta.hxx>
+#include <haze/core/object/pixel.hxx>
 
+#include <haze/gfx/backend/metal/common.hxx>
 #include <haze/app/window_base.hxx>
 
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct GLFWwindow ;
+
+////////////////////////////////////////////////////////////////////////////////
 
 namespace haze::mtl
 {
@@ -20,153 +27,66 @@ namespace haze::mtl
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class window : public window_base< window >
+class window : public window_base<   window     >
+             , public ns_object< NS::Window     >
+             , public ns_object< CA::MetalLayer >
 {
-        using _self = window ;
-        using _base = window_base< _self > ;
+        using     _self = window                      ;
+        using _win_base = window_base<   window     > ;
+        using  _ns_base = ns_object< NS::Window     > ;
+        using  _ca_base = ns_object< CA::MetalLayer > ;
 public:
-        using point_type = typename _base::point_type ;
-        using shape_type = typename _base::shape_type ;
-        using  size_type = typename _base:: size_type ;
+        using pixel_type = rgba_f_pixel ;
 
-        using  _base::_base ;
-        friend _base        ;
+        using  _win_base::_win_base ;
+        friend _win_base            ;
 
-        constexpr window (                                                            ) noexcept = default ;
-        constexpr window ( size_type _width_, size_type _height_, string_view _title_ ) noexcept           ;
+        constexpr window ( NS::Window * _window_, CA::MetalLayer * _layer_, GLFWwindow * _glfw_window_ )
+                : _win_base()
+                , _ns_base( _window_ )
+                , _ca_base(  _layer_ )
+                , glfw_window_{ _glfw_window_ } {}
 
-        constexpr window             ( window const &  _other_ ) noexcept ;
-        constexpr window             ( window       && _other_ ) noexcept ;
-        constexpr window & operator= ( window const &  _other_ ) noexcept ;
-        constexpr window & operator= ( window       && _other_ ) noexcept ;
+        constexpr window ( window const &  _other_ ) ;
+        constexpr window ( window       && _other_ ) noexcept
+                : _win_base()
+                , _ns_base( UTI_MOVE( _other_            ) )
+                , _ca_base( UTI_MOVE( _other_            ) )
+                , glfw_window_(       _other_.glfw_window_ )
+                , clear_color_{       _other_.clear_color_ }
+        { _other_.glfw_window_ = nullptr ; }
 
-        constexpr ~window () noexcept { _release() ; }
+        constexpr window & operator= ( window const &  _other_ ) ;
+        constexpr window & operator= ( window       && _other_ ) noexcept
+        {
+                _destroy() ;
+                _ns_base::operator=( UTI_MOVE( _other_ ) ) ;
+                _ca_base::operator=( UTI_MOVE( _other_ ) ) ;
 
-        constexpr void set_title ( string_view _title_                     ) noexcept ;
-        constexpr void set_size  ( size_type   _width_, size_type _height_ ) noexcept ;
+                glfw_window_ = _other_.glfw_window_ ;
+                _other_.glfw_window_ = nullptr ;
+
+                clear_color_ = _other_.clear_color_ ;
+
+                return *this ;
+        }
+
+        ~window () noexcept ;
+
+        constexpr operator GLFWwindow       * ()       noexcept { return glfw_window_ ; }
+        constexpr operator GLFWwindow const * () const noexcept { return glfw_window_ ; }
 private:
-        CGRect        shape_ { { 100, 100 }, { static_cast< CGFloat >( 800 ), static_cast< CGFloat >( 600 ) } } ;
-        string        title_ {} ;
-        NS::Window * window_ {} ;
+        GLFWwindow * glfw_window_ ;
 
-        constexpr size_type   _width () const noexcept { return shape_.size. width ; }
-        constexpr size_type  _height () const noexcept { return shape_.size.height ; }
-        constexpr string_view _title () const noexcept { return title_ ; }
-        constexpr auto        _shape () const noexcept { return shape_ ; }
+        pixel_type clear_color_ ;
 
-        constexpr NS::Window       * _impl ()       noexcept { return window_ ; }
-        constexpr NS::Window const * _impl () const noexcept { return window_ ; }
+        constexpr bool _closed () const noexcept { return glfw_window_ == nullptr ; }
 
-        constexpr void _init () noexcept ;
+        constexpr pixel_type       & _clear_color ()       noexcept { return clear_color_ ; }
+        constexpr pixel_type const & _clear_color () const noexcept { return clear_color_ ; }
 
-        constexpr void _release () noexcept { if( window_ ) { window_->release() ; window_ = nullptr ; } }
+        void _destroy () noexcept ;
 } ;
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-constexpr window::window ( size_type _width_, size_type _height_, string_view _title_ ) noexcept
-        : shape_{ { 100, 100 }, { static_cast< CGFloat >( _width_ ), static_cast< CGFloat >( _height_ ) } }
-{
-        HAZE_CORE_TRACE_S( "mtl::window::ctor_body" ) ;
-        set_size ( _width_, _height_ ) ;
-        set_title( _title_           ) ;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-constexpr window::window ( window const & _other_ ) noexcept
-        : shape_ { _other_. shape_ }
-        , title_ ( _other_. title_ )
-        , window_{ _other_.window_ }
-{
-        HAZE_CORE_TRACE_S( "mtl::window : ctor_copy_body" ) ;
-        window_->retain() ;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-constexpr window::window ( window && _other_ ) noexcept
-        : shape_ { _other_.shape_ }
-        , title_ ( UTI_MOVE( _other_.title_ ) )
-        , window_{ _other_.window_ }
-{
-        HAZE_CORE_TRACE_S( "mtl::window : ctor_move_body" ) ;
-        _other_.window_ = nullptr ;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-constexpr window & window::operator= ( window const & _other_ ) noexcept
-{
-        HAZE_CORE_TRACE_S( "mtl::window : assign_copy_body" ) ;
-        _release() ;
-
-        shape_  = _other_. shape_ ;
-        title_  = _other_. title_ ;
-        window_ = _other_.window_ ;
-
-        window_->retain() ;
-
-        return *this ;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-constexpr window & window::operator= ( window && _other_ ) noexcept
-{
-        HAZE_CORE_TRACE_S( "mtl::window : assign_move_body" ) ;
-        _release() ;
-
-        shape_  = _other_. shape_ ;
-        title_  = _other_. title_ ;
-        window_ = _other_.window_ ;
-
-        _other_.shape_  =      {} ;
-        _other_.title_  =      {} ;
-        _other_.window_ = nullptr ;
-
-        return *this ;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-constexpr void window::set_title ( string_view _title_ ) noexcept
-{
-        title_ = string( _title_ ) ;
-
-        if( window_ ) window_->setTitle( NS::String::string( title_.c_str(), NS::StringEncoding::UTF8StringEncoding ) ) ;
-
-        HAZE_CORE_DBG( "mtl::window::set_title : window title set to '" SV_FMT "'", SV_ARG( title_ ) ) ;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-constexpr void window::set_size ( size_type _width_, size_type _height_ ) noexcept
-{
-        if( window_ != nullptr ) { HAZE_CORE_ERROR( "mtl::window::set_size : can not set size on existing window" ) ; return ; }
-
-        shape_  = { { 100, 100 }, { static_cast< CGFloat >( _width_ ), static_cast< CGFloat >( _height_ ) } } ;
-
-        HAZE_CORE_DBG( "mtl::window::set_size : window size set to %ldx%ld", _width_, _height_ ) ;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-constexpr void window::_init () noexcept
-{
-        window_ = NS::Window::alloc()->init(
-                shape_,
-                NS::WindowStyleMaskClosable | NS::WindowStyleMaskTitled,
-                NS::BackingStoreBuffered,
-                false
-        ) ;
-        if( !window_ ) HAZE_CORE_FATAL( "mtl::window::init : failed to initialize window!" ) ;
-
-        window_->setTitle( NS::String::string( title_.c_str(), NS::StringEncoding::UTF8StringEncoding ) ) ;
-
-        HAZE_CORE_TRACE( "mtl::window::init : initialized window '" SV_FMT "' with resolution %.fx%.f", SV_ARG( title_ ), shape_.size.width, shape_.size.height ) ;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 

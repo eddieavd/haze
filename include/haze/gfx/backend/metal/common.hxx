@@ -11,16 +11,19 @@
 #include <haze/core/geometry/meta.hxx>
 #include <haze/core/geometry/point.hxx>
 
-#define  NS_PRIVATE_IMPLEMENTATION
-#define  CA_PRIVATE_IMPLEMENTATION
-#define MTL_PRIVATE_IMPLEMENTATION
-#define MTK_PRIVATE_IMPLEMENTATION
+// #define  NS_PRIVATE_IMPLEMENTATION
+// #define  CA_PRIVATE_IMPLEMENTATION
+// #define MTL_PRIVATE_IMPLEMENTATION
+// #define MTK_PRIVATE_IMPLEMENTATION
 
 UTI_DIAGS_PUSH()
 UTI_DIAGS_DISABLE( -Wunused-parameter )
 UTI_DIAGS_DISABLE( -Wgnu-anonymous-struct )
 
+#include <metalcpp/Foundation/Foundation.hpp>
 #include <metalcpp/Metal/Metal.hpp>
+#include <metalcpp/QuartzCore/CAMetalLayer.hpp>
+#include <metalcpp/QuartzCore/QuartzCore.hpp>
 #include <metalcppext/AppKit/AppKit.hpp>
 #include <metalcppext/MetalKit/MetalKit.hpp>
 
@@ -51,19 +54,21 @@ public:
 
         constexpr ns_object ( pointer _ptr_ ) noexcept : ptr_{ _ptr_ } {}
 
-        constexpr ns_object             ( ns_object const &  _other_ ) noexcept :             ptr_ { _other_.ptr_ } {         ptr_->retain() ;                }
-        constexpr ns_object             ( ns_object       && _other_ ) noexcept :             ptr_ { _other_.ptr_ } { _other_.ptr_ = nullptr ;                }
-        constexpr ns_object & operator= ( ns_object const &  _other_ ) noexcept { release() ; ptr_ = _other_.ptr_ ;           ptr_->retain() ; return *this ; }
-        constexpr ns_object & operator= ( ns_object       && _other_ ) noexcept { release() ; ptr_ = _other_.ptr_ ;   _other_.ptr_ = nullptr ; return *this ; }
+        constexpr ns_object             ( ns_object const &  _other_ ) noexcept :              ptr_ { _other_.ptr_ } {         ptr_->retain() ;                }
+        constexpr ns_object             ( ns_object       && _other_ ) noexcept :              ptr_ { _other_.ptr_ } { _other_.ptr_ = nullptr ;                }
+        constexpr ns_object & operator= ( ns_object const &  _other_ ) noexcept { _release() ; ptr_ = _other_.ptr_ ;           ptr_->retain() ; return *this ; }
+        constexpr ns_object & operator= ( ns_object       && _other_ ) noexcept { _release() ; ptr_ = _other_.ptr_ ;   _other_.ptr_ = nullptr ; return *this ; }
 
-        constexpr ~ns_object () noexcept { release() ; }
+        constexpr ~ns_object () noexcept { _release() ; }
 
-        constexpr void release () noexcept { if( ptr_ ) { ptr_->release() ; ptr_ = nullptr ; } }
+        constexpr bool exists () const noexcept { return ptr_ != nullptr ; }
 
         constexpr operator       pointer ()       noexcept { return ptr_ ; }
         constexpr operator const_pointer () const noexcept { return ptr_ ; }
-private:
+protected:
         pointer ptr_ {} ;
+
+        constexpr void _release () noexcept { if( ptr_ ) { ptr_->release() ; ptr_ = nullptr ; } }
 } ;
 
 
