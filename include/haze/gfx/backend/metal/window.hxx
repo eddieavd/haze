@@ -36,7 +36,8 @@ class window : public window_base<   window     >
         using  _ns_base = ns_object< NS::Window     > ;
         using  _ca_base = ns_object< CA::MetalLayer > ;
 public:
-        using pixel_type = rgba_f_pixel ;
+        using layer_type = ::haze:: layer                  ;
+        using pixel_type = typename layer_type::pixel_type ;
 
         using  _win_base::_win_base ;
         friend _win_base            ;
@@ -78,12 +79,19 @@ public:
 private:
         GLFWwindow * glfw_window_ ;
 
+        layer_type       layer_ ;
         pixel_type clear_color_ ;
+
+        std::function< void( _self & ) > on_update_ { []( auto ){} } ;
 
         constexpr bool _closed () const noexcept { return glfw_window_ == nullptr ; }
 
         constexpr pixel_type       & _clear_color ()       noexcept { return clear_color_ ; }
         constexpr pixel_type const & _clear_color () const noexcept { return clear_color_ ; }
+
+        constexpr void _set_on_update ( std::function< void( _self & ) > const & _on_update_ ) noexcept ;
+
+        constexpr void _on_update () { on_update_( *this ) ; }
 
         void _destroy () noexcept ;
 } ;

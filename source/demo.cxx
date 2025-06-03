@@ -19,6 +19,11 @@ haze::window_options window_opts =
         haze::string( "haze::demo" )
 } ;
 
+auto on_update = []( haze::window & window )
+{
+
+} ;
+
 int main ( int argc, char ** argv )
 {
         haze::log::init( argc, argv ) ;

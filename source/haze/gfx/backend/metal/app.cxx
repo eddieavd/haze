@@ -102,6 +102,8 @@ i32_t app::_run ( i32_t _argc_, char ** _argv_ )
                                 w.destroy() ;
                                 continue ;
                         }
+                        w.on_update() ;
+
                         NS::AutoreleasePool * pool = NS::AutoreleasePool::alloc()->init() ;
 
                         HAZE_CORE_YAP( "app::run : fetching next drawable..." ) ;
