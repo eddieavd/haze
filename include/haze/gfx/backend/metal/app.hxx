@@ -27,7 +27,39 @@ namespace haze::mtl
 
 ////////////////////////////////////////////////////////////////////////////////
 
-using layer = generic_layer< rgba_u8_pixel, fpoint_3d > ;
+class ns_app : private NS::Application
+{
+        constexpr void test ()
+        {
+
+        }
+
+//      static Application*                sharedApplication();
+//      void                                     setDelegate( const ApplicationDelegate* pDelegate );
+//      bool                             setActivationPolicy( ActivationPolicy activationPolicy );
+//      void                       activateIgnoringOtherApps( bool ignoreOtherApps );
+//      void                                     setMainMenu( const class Menu* pMenu );
+//      NS::Array*                                   windows() const;
+//      void                                             run();
+//      void                                       terminate( const Object* pSender );
+
+} ;
+
+////////////////////////////////////////////////////////////////////////////////
+
+struct app_context_data
+{
+        context      ctx_ {} ;
+        window    window_ {} ;
+        MTK::View * view_ {} ;
+
+        renderer_api renderer_api_ ;
+        layer               layer_ ;
+
+        std::function< void( layer & ) > update_ ;
+
+        NS::Application * application_ {} ;
+} ;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -42,19 +74,12 @@ class app : public app_base< app >
         public:
                 friend app ;
 
-                constexpr view_delegate ( context & _ctx_ )          ;
-                virtual  ~view_delegate (                 ) override ;
-
-                constexpr void set_on_update ( std::function< void( layer & ) > const & _update_ ) noexcept { update_ = _update_ ; }
+                constexpr view_delegate ( app_context_data * _appdata_ ) : appdata_( _appdata_ ) {}
+                virtual  ~view_delegate (                              )   override              {}
 
                 virtual void drawInMTKView ( MTK::View * _view_ ) override ;
-
-                constexpr void release () noexcept { renderer_.release() ; }
         private:
-                renderer_api renderer_ ;
-                layer           layer_ ;
-
-                std::function< void( layer & ) > update_ ;
+                app_context_data * appdata_ ;
         } ;
 
         class app_delegate : public NS::ApplicationDelegate
@@ -62,11 +87,9 @@ class app : public app_base< app >
         public:
                 friend app ;
 
-                constexpr app_delegate () noexcept { ctx_.init() ; }
+                constexpr app_delegate () noexcept : appdata_{ {}, {}, {}, renderer_api( appdata_.ctx_ ), {}, {}, {} } {}
 
                 ~app_delegate () noexcept ;
-
-                constexpr void set_on_update ( std::function< void( layer & ) > const & _update_ ) noexcept { update_ = _update_ ; }
 
                 virtual void applicationWillFinishLaunching                  ( NS::Notification * _notification_ ) override ;
                 virtual void applicationDidFinishLaunching                   ( NS::Notification * _notification_ ) override ;
@@ -77,28 +100,32 @@ class app : public app_base< app >
                         HAZE_CORE_DBG_S( "mtl::app::app_delegate::on_terminate" ) ;
 
                         HAZE_CORE_DBG( "mtl::app::app_delegate::on_terminate : releasing view..." ) ;
-                        view_->release() ;
+                        appdata_.view_->release() ;
                         HAZE_CORE_DBG( "mtl::app::app_delegate::on_terminate : view released" ) ;
 
 //                      HAZE_CORE_DBG( "mtl::app::app_delegate::on_terminate : releasing window..." ) ;
-//                      window_.release() ;
+//                      appdata_.window_.release() ;
 //                      HAZE_CORE_DBG( "mtl::app::app_delegate::on_terminate : window released" ) ;
 
+                        HAZE_CORE_DBG( "mtl::app::app_delegate::on_terminate : releasing renderer..." ) ;
+                        appdata_.renderer_api_.release() ;
+                        HAZE_CORE_DBG( "mtl::app::app_delegate::on_terminate : renderer released" ) ;
+
                         HAZE_CORE_DBG( "mtl::app::app_delegate::on_terminate : releasing context..." ) ;
-                        ctx_.release() ;
+                        appdata_.ctx_.release() ;
                         HAZE_CORE_DBG( "mtl::app::app_delegate::on_terminate : context released" ) ;
+
+                        HAZE_CORE_DBG( "mtl::app::app_delegate::on_terminate : releasing application..." ) ;
+                        appdata_.application_->release() ;
+                        HAZE_CORE_DBG( "mtl::app::app_delegate::on_terminate : application released" ) ;
 
                         HAZE_CORE_DBG( "mtl::app::app_delegate::on_terminate : deleting view delegate..." ) ;
                         delete view_dlgt_ ;
                         HAZE_CORE_DBG( "mtl::app::app_delegate::on_terminate : view delegate deleted" ) ;
                 }
         private:
-                context               ctx_ {} ;
-                window             window_ {} ;
-                MTK::    View *      view_ {} ;
-                view_delegate * view_dlgt_ {} ;
-
-                std::function< void( layer & ) > update_ ;
+                app_context_data  appdata_ ;
+                view_delegate * view_dlgt_ ;
 
                 NS::Menu * _create_menu_bar () ;
         } ;
@@ -108,37 +135,21 @@ public:
 
         constexpr  app () noexcept ;
         constexpr ~app () noexcept ;
-
-        constexpr void on_update ( std::function< void( layer & ) > const & _update_fn_ ) noexcept
-        { app_delegate_.set_on_update( UTI_FWD( _update_fn_ ) ) ; }
-
-        constexpr window       & get_window ()       noexcept { return app_delegate_.window_ ; }
-        constexpr window const & get_window () const noexcept { return app_delegate_.window_ ; }
-
-        constexpr context       & get_context ()       noexcept { return app_delegate_.ctx_ ; }
-        constexpr context const & get_context () const noexcept { return app_delegate_.ctx_ ; }
 private:
-        NS::Application * application_ {} ;
         app_delegate     app_delegate_ {} ;
+        app_context_data *    appdata_ {} ;
 
         constexpr void _run () ;
+
+        constexpr auto       & _window ()       noexcept { return appdata_->window_ ; }
+        constexpr auto const & _window () const noexcept { return appdata_->window_ ; }
+
+        constexpr void _on_update ( std::function< void( layer & ) > const & _on_update_ )
+        { appdata_->update_ = _on_update_ ; }
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-
-constexpr app::view_delegate::view_delegate ( context & _ctx_ )
-        : _base()
-        , renderer_( _ctx_ )
-{
-        HAZE_CORE_TRACE_S( "mtl::app::view_delegate : ctor_body" ) ;
-}
-
-inline app::view_delegate::~view_delegate () noexcept
-{
-        HAZE_CORE_TRACE_S( "mtl::app::view_delegate : dtor_body" ) ;
-        release() ;
-}
 
 inline void app::view_delegate::drawInMTKView ( MTK::View * _view_ )
 {
@@ -146,31 +157,35 @@ inline void app::view_delegate::drawInMTKView ( MTK::View * _view_ )
         static bool init_renderer = [ & ]
         {
                 HAZE_CORE_WARN( "mtl::app::view_delegate::drawInMTKView : first draw call, initializing renderer..." ) ;
-                renderer_.init( 64 * 1024 * 1024, 64 * 1024 * 1024 ) ;
+                appdata_->renderer_api_.init( 64 * 1024 * 1024
+                                            , 64 * 1024 * 1024
+                                            , 64 * 1024 * 1024
+                                            , 64 * 1024 * 1024
+                                            , 64 * 1024 * 1024
+                                            , 64 * 1024 * 1024
+                                            , 64 * 1024 * 1024
+                ) ;
                 return true ;
         }() ;
 
         HAZE_CORE_YAP_S( "mtl::app::view_delegate::drawInMTKView : system requested redraw" ) ;
-
+        {
         HAZE_CORE_YAP_S( "mtl::app::view_delegate::drawInMTKView : calling on_update handler..." ) ;
-        update_( layer_ ) ;
-        HAZE_CORE_YAP_S( "mtl::app::view_delegate::drawInMTKView : on_update finished" ) ;
-
+        appdata_->update_( appdata_->layer_ ) ;
+        HAZE_CORE_YAP( "mtl::app::view_delegate::drawInMTKView : on_update finished" ) ;
+        }
+        {
         HAZE_CORE_YAP_S( "mtl::app::view_delegate::drawInMTKView : invoking renderer..." ) ;
-        renderer_.draw( layer_, _view_ ) ;
-        HAZE_CORE_YAP_S( "mtl::app::view_delegate::drawInMTKView : finished" ) ;
+        appdata_->renderer_api_.draw( appdata_->layer_, _view_ ) ;
+        HAZE_CORE_YAP( "mtl::app::view_delegate::drawInMTKView : finished" ) ;
+        }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
 inline app::app_delegate::~app_delegate () noexcept
 {
-        HAZE_CORE_TRACE_S( "mtl::app::app_delegate : ctor_begin" ) ;
 
-        if( view_ ) view_ ->release() ;
-        window_.release() ;
-        if( view_dlgt_ ) delete view_dlgt_ ;
-        ctx_.release() ;
 }
 
 inline NS::Menu * app::app_delegate::_create_menu_bar ()
@@ -243,27 +258,28 @@ inline void app::app_delegate::applicationDidFinishLaunching ( NS::Notification 
 {
         HAZE_CORE_TRACE_S( "mtl::app::app_delegate::applicationDidFinishLaunching" ) ;
 
-        window_.init() ;
+        appdata_.   ctx_.init() ;
+        appdata_.window_.init() ;
 
         HAZE_CORE_DBG( "mtl::app::app_delegate::applicationDidFinishLaunching : window created" ) ;
 
-        view_ = MTK::View::alloc()->init( window_.shape(), ctx_.device() ) ;
-        view_->setColorPixelFormat( MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB ) ;
-        view_->setClearColor( MTL::ClearColor::Make( 0.0, 0.0, 0.0, 1.0 ) ) ;
+        appdata_.view_ = MTK::View::alloc()->init( appdata_.window_.shape(), appdata_.ctx_.device() ) ;
+        appdata_.view_->setColorPixelFormat( MTL::PixelFormat::PixelFormatBGRA8Unorm_sRGB ) ;
+        appdata_.view_->setClearColor( MTL::ClearColor::Make( 0.0, 0.0, 0.0, 1.0 ) ) ;
 
         HAZE_CORE_DBG( "mtl::app::app_delegate::applicationDidFinishLaunching : view initialized" ) ;
 
-        view_dlgt_ = new view_delegate( ctx_ ) ;
-        view_dlgt_->set_on_update( update_ ) ;
-        view_->setDelegate( view_dlgt_ ) ;
+        view_dlgt_ = new view_delegate( &appdata_ ) ;
+//      view_dlgt_->set_on_update( update_ ) ;
+        appdata_.view_->setDelegate( view_dlgt_ ) ;
 
         HAZE_CORE_DBG( "mtl::app::app_delegate::applicationDidFinishLaunching : view delegate created" ) ;
 
-        window_.impl()->setContentView( view_ ) ;
+        appdata_.window_.impl()->setContentView( appdata_.view_ ) ;
 
         HAZE_CORE_DBG( "mtl::app::app_delegate::applicationDidFinishLaunching : ordering window to front..." ) ;
 
-        window_.impl()->makeKeyAndOrderFront( nullptr ) ;
+        appdata_.window_.impl()->makeKeyAndOrderFront( nullptr ) ;
 
         NS::Application * app = reinterpret_cast< NS::Application * >( _notification_->object() ) ;
         app->activateIgnoringOtherApps( true ) ;
@@ -271,7 +287,7 @@ inline void app::app_delegate::applicationDidFinishLaunching ( NS::Notification 
 
 inline bool app::app_delegate::applicationShouldTerminateAfterLastWindowClosed ( NS::Application * )
 {
-        HAZE_CORE_INFO( "app::app_delegate::applicationShouldTerminateAfterLastWindowClosed : terminating..." ) ;
+        HAZE_CORE_INFO( "app::app_delegate : last window closed, terminating..." ) ;
 
         on_terminate() ;
 
@@ -281,16 +297,17 @@ inline bool app::app_delegate::applicationShouldTerminateAfterLastWindowClosed (
 ////////////////////////////////////////////////////////////////////////////////
 
 constexpr app::app () noexcept
-        : application_ { NS ::Application::sharedApplication() }
+        : app_delegate_{}
+        , appdata_{ &app_delegate_.appdata_ }
 {
-        HAZE_CORE_TRACE_S( "app::ctor_body" ) ;
+        appdata_->application_ = NS::Application::sharedApplication() ;
 }
 
 constexpr app::~app () noexcept
 {
         HAZE_CORE_TRACE_S( "app::dtor_body" ) ;
 
-        application_->release() ;
+        appdata_->application_->release() ;
 }
 
 constexpr void app::_run ()
@@ -298,11 +315,11 @@ constexpr void app::_run ()
         HAZE_CORE_INFO_S( "app::run" ) ;
         HAZE_CORE_DBG( "app::run : setting app delegate..." ) ;
 
-        application_->setDelegate( &app_delegate_ ) ;
+        appdata_->application_->setDelegate( &app_delegate_ ) ;
 
         HAZE_CORE_INFO( "app::run : launching application..." ) ;
 
-        application_->run() ;
+        appdata_->application_->run() ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -183,14 +183,12 @@ constexpr void gpu_memory_resource::_init ( allocator_config const & _config_, s
                 return ;
         }
 
-        HAZE_CORE_TRACE_S( "mtl::gpu_memory_resource( '" SV_FMT "' )::init : initializing metal gpu_memory_resource...", SV_ARG( name() ) ) ;
-        {
         HAZE_CORE_TRACE  ( "mtl::gpu_memory_resource( '" SV_FMT "' )::init :    placement strategy   : { " SV_FMT " }", SV_ARG( name() ), SV_ARG(   placement_strategy_string( config_.  placement_strategy_ ) ) ) ;
         HAZE_CORE_TRACE  ( "mtl::gpu_memory_resource( '" SV_FMT "' )::init :    cpu cache mode       : { " SV_FMT " }", SV_ARG( name() ), SV_ARG(       cpu_cache_mode_string( config_.      cpu_cache_mode_ ) ) ) ;
         HAZE_CORE_TRACE  ( "mtl::gpu_memory_resource( '" SV_FMT "' )::init :    storage mode         : { " SV_FMT " }", SV_ARG( name() ), SV_ARG(         storage_mode_string( config_.        storage_mode_ ) ) ) ;
         HAZE_CORE_TRACE  ( "mtl::gpu_memory_resource( '" SV_FMT "' )::init :    hazard tracking mode : { " SV_FMT " }", SV_ARG( name() ), SV_ARG( hazard_tracking_mode_string( config_.hazard_tracking_mode_ ) ) ) ;
         HAZE_CORE_TRACE  ( "mtl::gpu_memory_resource( '" SV_FMT "' )::init :    sparse page size     : { %dkb }"      , SV_ARG( name() ),                sparse_page_size_val( config_.    sparse_page_size_   ) ) ;
-        }
+
         MTL::HeapDescriptor * desc = MTL::HeapDescriptor::alloc()->init() ;
 
         desc->setType              ( MTL::HeapType          ( uti::to_underlying( config_.  placement_strategy_ ) ) ) ;
@@ -205,7 +203,7 @@ constexpr void gpu_memory_resource::_init ( allocator_config const & _config_, s
 
         desc->release() ;
 
-        if( !heap_ ) HAZE_CORE_FATAL( "mtl::gpu_memory_resource( '" SV_FMT "' )::init : failed creating underlying heap!", SV_ARG( name() ) ) ;
+        if( !heap_ ) HAZE_CORE_FATAL( "mtl::gpu_memory_resource( '" SV_FMT "' )::init : failed allocating heap!", SV_ARG( name() ) ) ;
 
         auto max_size = allocated_size() ;
 
@@ -224,13 +222,16 @@ constexpr void gpu_memory_resource::_init ( allocator_config const & _config_, s
 
 constexpr void gpu_memory_resource::_release () noexcept
 {
-        HAZE_CORE_TRACE_S( "metal_memory_resource(' " SV_FMT " ')::release", SV_ARG( name() ) ) ;
-
+        HAZE_CORE_TRACE_S( "mtl::gpu_memory_resource(' " SV_FMT " ')::release", SV_ARG( name() ) ) ;
+        {
+        HAZE_CORE_INFO_S( "mtl::gpu_memory_resource( '" SV_FMT "' ) : usage on release", SV_ARG( name() ) ) ;
+        _log_memory_usage() ;
+        }
         if( heap_ )
         {
                 heap_->release() ; 
                 heap_ = nullptr ;
-                HAZE_CORE_TRACE( "metal_memory_resource(' " SV_FMT " ')::release : heap released", SV_ARG( name() ) ) ;
+                HAZE_CORE_TRACE( "mtl::gpu_memory_resource(' " SV_FMT " ')::release : heap released", SV_ARG( name() ) ) ;
         }
 }
 

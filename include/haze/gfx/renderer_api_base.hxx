@@ -28,6 +28,8 @@ class renderer_api_base
 public:
         constexpr void release () noexcept { static_cast< _impl * >( this )->_release() ; }
 
+        UTI_NODISCARD constexpr bool initialized () const noexcept { return static_cast< _impl * >( this )->_initialized() ; }
+
         constexpr void init ( ssize_t       _dynamic_alloc_init_    , ssize_t       _static_alloc_init_    ,
                               ssize_t _dynamic_write_alloc_init_ = 0, ssize_t _static_write_alloc_init_ = 0,
                               ssize_t      _sparse16_alloc_init_ = 0, ssize_t     _sparse64_alloc_init_ = 0, ssize_t _sparse256_alloc_init_ = 0 )

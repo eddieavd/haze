@@ -35,7 +35,6 @@ class renderer_api : public renderer_api_base< renderer_api >
 {
         using _self = renderer_api ;
         using _base = renderer_api_base< _self > ;
-
 public:
         using  _base::_base ;
         friend _base        ;
@@ -49,13 +48,9 @@ public:
                 ,      sparse16_allocator_(  ctx_ )
                 ,      sparse64_allocator_(  ctx_ )
                 ,     sparse256_allocator_(  ctx_ )
-        {
-                HAZE_CORE_TRACE_S( "mtl::renderer_api::ctor_body" ) ;
-        }
+        {}
 
-        constexpr ~renderer_api () noexcept { HAZE_CORE_TRACE_S( "mtl::renderer_api::dtor_body" ) ; _release() ; }
-
-        constexpr bool initialized () const noexcept { return cmd_q_ != nullptr ; }
+        constexpr ~renderer_api () noexcept { _release() ; }
 private:
         context & ctx_ ;
 
@@ -89,6 +84,13 @@ private:
 
         constexpr void    _init ()          ;
         constexpr void _release () noexcept ;
+
+        constexpr bool _initialized () const noexcept
+        {
+                return ( cmd_q_ != nullptr )
+                    && ( dynamic_allocator_.allocated_size() > 0 )
+                    && (  static_allocator_.allocated_size() > 0 ) ;
+        }
 
         constexpr void _compile_shaders       () ;
         constexpr void _initialize_allocators () ;
@@ -166,12 +168,12 @@ constexpr void renderer_api::_draw ( layer const & _layer_, void * _view_ )
                                 } ;
                                 simd::float3 colors [ 3 ] =
                                 {
-                                        { 1.0, 0.0, 0.0 } ,
-                                        { 0.0, 1.0, 0.0 } ,
-                                        { 0.0, 0.0, 1.0 } ,
-//                                      { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f } ,
-//                                      { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f } ,
-//                                      { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f }
+//                                      { 1.0, 0.0, 0.0 } ,
+//                                      { 0.0, 1.0, 0.0 } ,
+//                                      { 0.0, 0.0, 1.0 } ,
+                                        { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f } ,
+                                        { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f } ,
+                                        { object.fill()[ pixel_type:: RED ] / 255.0f, object.fill()[ pixel_type::GREEN ] / 255.0f , object.fill()[ pixel_type::BLUE ] / 255.0f }
                                 } ;
                                 memcpy( vertex_pos_buffer_.data(), positions, sizeof( positions ) ) ;
                                 memcpy( vertex_col_buffer_.data(),    colors, sizeof(    colors ) ) ;

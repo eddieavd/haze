@@ -165,7 +165,7 @@ constexpr void window::_init () noexcept
 
         window_->setTitle( NS::String::string( title_.c_str(), NS::StringEncoding::UTF8StringEncoding ) ) ;
 
-        HAZE_CORE_TRACE( "mtl::window::init : initialized window '" SV_FMT "'with resolution %.fx%.f", SV_ARG( title_ ), shape_.size.width, shape_.size.height ) ;
+        HAZE_CORE_TRACE( "mtl::window::init : initialized window '" SV_FMT "' with resolution %.fx%.f", SV_ARG( title_ ), shape_.size.width, shape_.size.height ) ;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

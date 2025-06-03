@@ -35,6 +35,48 @@ namespace haze::mtl
 
 ////////////////////////////////////////////////////////////////////////////////
 
+template< typename T >
+class ns_object
+{
+public:
+        using value_type = T ;
+
+        using       pointer = value_type       * ;
+        using const_pointer = value_type const * ;
+
+        static constexpr ns_object   retain ( pointer _ptr_ ) noexcept { ns_object obj( _ptr_ ) ; obj.ptr_->retain() ; return obj ; }
+        static constexpr ns_object transfer ( pointer _ptr_ ) noexcept { ns_object obj( _ptr_ ) ;                      return obj ; }
+
+        constexpr ns_object () noexcept = default ;
+
+        constexpr ns_object ( pointer _ptr_ ) noexcept : ptr_{ _ptr_ } {}
+
+        constexpr ns_object             ( ns_object const &  _other_ ) noexcept :             ptr_ { _other_.ptr_ } {         ptr_->retain() ;                }
+        constexpr ns_object             ( ns_object       && _other_ ) noexcept :             ptr_ { _other_.ptr_ } { _other_.ptr_ = nullptr ;                }
+        constexpr ns_object & operator= ( ns_object const &  _other_ ) noexcept { release() ; ptr_ = _other_.ptr_ ;           ptr_->retain() ; return *this ; }
+        constexpr ns_object & operator= ( ns_object       && _other_ ) noexcept { release() ; ptr_ = _other_.ptr_ ;   _other_.ptr_ = nullptr ; return *this ; }
+
+        constexpr ~ns_object () noexcept { release() ; }
+
+        constexpr void release () noexcept { if( ptr_ ) { ptr_->release() ; ptr_ = nullptr ; } }
+
+        constexpr operator       pointer ()       noexcept { return ptr_ ; }
+        constexpr operator const_pointer () const noexcept { return ptr_ ; }
+private:
+        pointer ptr_ {} ;
+} ;
+
+
+namespace ns
+{
+
+template< typename T > constexpr ns_object< T >   retain ( typename ns_object< T >::pointer _ptr_ ) noexcept { return ns_object< T >::  retain( _ptr_ ) ; }
+template< typename T > constexpr ns_object< T > transfer ( typename ns_object< T >::pointer _ptr_ ) noexcept { return ns_object< T >::transfer( _ptr_ ) ; }
+
+} // namespace ns
+
+////////////////////////////////////////////////////////////////////////////////
+
 enum class placement_strategy
 {
 ////////////////////////////////////////////////////////////////////////////////
