@@ -133,9 +133,6 @@ i32_t app::_run ( i32_t _argc_, char ** _argv_ )
                 {
                         windows_.pop_back() ;
                 }
-                ++frame_count ;
-
-//              if( frame_count > 5 ) break ;
         }
         HAZE_CORE_INFO( "app::run : dropped out of main loop" ) ;
 
