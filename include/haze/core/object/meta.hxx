@@ -76,7 +76,7 @@ concept shape_object = requires( ShapeObject shape_object )
         pixel_like< typename ShapeObject::pixel_type > ;
 
         { shape_object.shape()                                  } -> uti::meta::convertible_to< typename ShapeObject::shape_type > ;
-        { shape_object.at( typename ShapeObject::point_type{} ) } -> uti::meta::convertible_to< typename ShapeObject::pixel_type > ;
+//      { shape_object.at( typename ShapeObject::point_type{} ) } -> uti::meta::convertible_to< typename ShapeObject::pixel_type > ;
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////

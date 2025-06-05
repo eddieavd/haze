@@ -51,7 +51,20 @@ public:
         using filled_rectangle_type = filled_shape< pixel_type, rectangle_type > ;
         using filled_triangle_type  = filled_shape< pixel_type,  triangle_type > ;
 
-        using object_storage = uti::variant_vector< ::haze::core_memory_resource, filled_rectangle_type, filled_triangle_type, ExtraShapes..., object_data > ;
+        using colored_rectangle_type = colored_shape< pixel_type, rectangle_type > ;
+        using colored_triangle_type  = colored_shape< pixel_type,  triangle_type > ;
+
+        using object_storage =
+                uti::variant_vector
+                <
+                        ::haze::core_memory_resource,
+                        filled_rectangle_type,
+                        filled_triangle_type,
+                        colored_rectangle_type ,
+                        colored_triangle_type ,
+                        ExtraShapes...,
+                        object_data
+                > ;
 
         using shape_type = rectangle_type ;
 

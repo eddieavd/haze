@@ -188,14 +188,14 @@
 #       ifndef HAZE_ASSERTS
 #               define HAZE_ASSERT( ... ) ( ( void ) 0 )
 #       else
-#               define HAZE_ASSERT( cond, ... )                                                                     \
-                do                                                                                                   \
-                {                                                                                                     \
-                        if( !( cond ) )                                                                                \
-                        {                                                                                               \
-                                HAZE_CORE_ERROR( #cond " failed in " __FILE__ " on line %d - " __VA_ARGS__, __LINE__ ) ; \
-                                HAZE_DBG_BREAK() ;                                                                        \
-                        }                                                                                                  \
+#               define HAZE_ASSERT( cond, ... )             \
+                do                                           \
+                {                                             \
+                        if( !( cond ) )                        \
+                        {                                       \
+                                HAZE_CORE_ERROR( __VA_ARGS__ ) ; \
+                                HAZE_DBG_BREAK() ;                \
+                        }                                          \
                 } while( 0 )
         #endif
 #endif

@@ -26,6 +26,7 @@ struct generic_rectangle
 
         static constexpr ssize_t       dimensions { point_type::dimensions } ;
         static constexpr ssize_t shape_dimensions {                      2 } ;
+        static constexpr ssize_t     vertex_count {                      4 } ;
 
         point_type begin_ ;
         point_type   end_ ;
@@ -37,6 +38,16 @@ struct generic_rectangle
         constexpr operator generic_rectangle< OtherPointType > () noexcept
         {
                 return generic_rectangle< OtherPointType >{ begin_, end_ } ;
+        }
+
+        UTI_NODISCARD constexpr uti::array< point_type, vertex_count > vertices () const noexcept
+        {
+                uti::array< point_type, vertex_count > verts { begin_point(), begin_point(), end_point(), end_point() } ;
+
+                verts[ 1 ].x() = end_point().x() ;
+                verts[ 2 ].y() = end_point().y() ;
+
+                return verts ;
         }
 
         UTI_NODISCARD constexpr point_type       & begin_point ()       noexcept { return begin_ ; }

@@ -34,7 +34,14 @@ public:
         constexpr context ()
                 : _ctx_base()
                 , _ns_base(  MTL::CreateSystemDefaultDevice() )
-                , _cq_base( _ns_base::ptr_->newCommandQueue() ) {}
+                , _cq_base( _ns_base::ptr_->newCommandQueue() )
+        {
+                if( !_ns_base::ptr_ ) { HAZE_CORE_ERROR( "context : failed initializing default GPU device" ) ; }
+                HAZE_CORE_INFO( "context : initialized default GPU device" ) ;
+
+                if( !_cq_base::ptr_ ) { HAZE_CORE_ERROR( "context : failed initializing command queue" ) ; }
+                HAZE_CORE_INFO( "context : initialized command queue" ) ;
+        }
 } ;
 
 ////////////////////////////////////////////////////////////////////////////////

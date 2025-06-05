@@ -27,6 +27,7 @@ struct generic_triangle
 
         static constexpr ssize_t       dimensions { point_type::dimensions } ;
         static constexpr ssize_t shape_dimensions {                      2 } ;
+        static constexpr ssize_t     vertex_count {                      3 } ;
 
         point_type a_ ;
         point_type b_ ;
@@ -39,6 +40,11 @@ struct generic_triangle
         constexpr operator generic_triangle< OtherPointType > () noexcept
         {
                 return generic_triangle< OtherPointType >{ a_, b_, c_ } ;
+        }
+
+        UTI_NODISCARD uti::array< point_type, vertex_count > vertices () const noexcept
+        {
+                return { a_, b_, c_ } ;
         }
 
         UTI_NODISCARD constexpr bool contains ( point_type _point_ ) const noexcept

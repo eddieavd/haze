@@ -25,7 +25,9 @@ endif()
 
 target_sources( haze PRIVATE
         ${PROJECT_SOURCE_DIR}/source/haze/gfx/backend/metal/common.cxx
+        ${PROJECT_SOURCE_DIR}/source/haze/gfx/backend/metal/vertex_array.cxx
         ${PROJECT_SOURCE_DIR}/source/haze/gfx/backend/metal/allocator.cxx
+        ${PROJECT_SOURCE_DIR}/source/haze/gfx/backend/metal/renderer_api.cxx
         ${PROJECT_SOURCE_DIR}/source/haze/gfx/backend/metal/app.cxx
         ${PROJECT_SOURCE_DIR}/source/haze/gfx/backend/metal/glfw_adapter.mm
 )

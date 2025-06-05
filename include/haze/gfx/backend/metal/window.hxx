@@ -82,14 +82,19 @@ private:
         layer_type       layer_ ;
         pixel_type clear_color_ ;
 
-        std::function< void( _self & ) > on_update_ { []( auto ){} } ;
+        std::function< void( _self & ) > on_update_ { []( auto & ){} } ;
 
         constexpr bool _closed () const noexcept { return glfw_window_ == nullptr ; }
 
         constexpr pixel_type       & _clear_color ()       noexcept { return clear_color_ ; }
         constexpr pixel_type const & _clear_color () const noexcept { return clear_color_ ; }
 
-        constexpr void _set_on_update ( std::function< void( _self & ) > const & _on_update_ ) noexcept ;
+        constexpr layer_type       & _layer ()       noexcept { return layer_ ; }
+        constexpr layer_type const & _layer () const noexcept { return layer_ ; }
+
+        constexpr string_view _title () const noexcept { return "unimplemented" ; }
+
+        constexpr void _set_on_update ( std::function< void( _self & ) > const & _on_update_ ) noexcept { on_update_ = _on_update_ ; }
 
         constexpr void _on_update () { on_update_( *this ) ; }
 

@@ -48,6 +48,7 @@ void window::_destroy () noexcept
 ////////////////////////////////////////////////////////////////////////////////
 
 app::app ()
+        : renderer_api_( ctx_, default_renderer_api_config )
 {
         HAZE_CORE_INFO_S( "app : ctor" ) ;
         HAZE_CORE_INFO( "app : initializing glfw..." ) ;
@@ -76,6 +77,11 @@ i32_t app::_run ( i32_t _argc_, char ** _argv_ )
                 HAZE_CORE_ERROR( "app::run : no window available. use create_window() to create one" ) ;
                 return 1 ;
         }
+
+        HAZE_CORE_INFO( "app::run : initializing renderer..." ) ;
+        renderer_api_.init() ;
+        HAZE_CORE_INFO( "app::run : renderer initialized" ) ;
+
         HAZE_CORE_INFO( "app::run : starting main loop..." ) ;
 
         while( !windows_.empty() )
@@ -86,60 +92,30 @@ i32_t app::_run ( i32_t _argc_, char ** _argv_ )
                 glfwPollEvents() ;
                 HAZE_CORE_YAP( "app::run : glfw polling events done" ) ;
 
-                HAZE_CORE_YAP( "app::run : creating command buffer..." ) ;
-                MTL::CommandBuffer * command_buffer = static_cast< MTL::CommandQueue * >( ctx_ )->commandBuffer() ;
-                if( !command_buffer ) { HAZE_CORE_ERROR( "app::run : failed creating command buffer" ) ; continue ; }
-                HAZE_CORE_YAP( "app::run : command buffer created" ) ;
-
-                for( auto & w : windows_ )
+                for( window & w : windows_ )
                 {
+                        HAZE_CORE_YAP_S( "app::run : window " SV_FMT, SV_ARG( w.title() ) ) ;
+
                         if( w.closed() )
                         {
+                                HAZE_CORE_YAP( "app::run : window closed" ) ;
                                 continue ;
                         }
                         if( glfwWindowShouldClose( w ) )
                         {
+                                HAZE_CORE_YAP( "app::run : window should close" ) ;
                                 w.destroy() ;
                                 continue ;
                         }
+                        HAZE_CORE_YAP( "app::run : running window on_update..." ) ;
                         w.on_update() ;
+                        HAZE_CORE_YAP( "app::run : on_update finished" ) ;
 
-                        NS::AutoreleasePool * pool = NS::AutoreleasePool::alloc()->init() ;
-
-                        HAZE_CORE_YAP( "app::run : fetching next drawable..." ) ;
-                        CA::MetalDrawable * drawable = static_cast< CA::MetalLayer * >( w )->nextDrawable() ;
-                        if( !drawable ) { HAZE_CORE_ERROR( "app::run : failed fetching drawable" ) ; continue ; }
-                        HAZE_CORE_YAP( "app::run : drawable fetched" ) ;
-
-                        HAZE_CORE_YAP( "app::run : creating render pass descriptor..." ) ;
-                        MTL::RenderPassDescriptor * render_pass_desc = MTL::RenderPassDescriptor::alloc()->init() ;
-                        if( !render_pass_desc ) { HAZE_CORE_ERROR( "app::run : failed creating render pass descriptor" ) ; pool->release() ; continue ; }
-                        MTL::RenderPassColorAttachmentDescriptor * color_attachment_desc = render_pass_desc->colorAttachments()->object( 0 ) ;
-                        color_attachment_desc->setTexture( drawable->texture() ) ;
-                        color_attachment_desc->setLoadAction( MTL::LoadActionClear ) ;
-                        color_attachment_desc->setClearColor( MTL::ClearColor( w.clear_color()[ 0 ] / 255.0, w.clear_color()[ 1 ] / 255.0, w.clear_color()[ 2 ] / 255.0, w.clear_color()[ 3 ] / 255.0 ) ) ;
-                        color_attachment_desc->setStoreAction( MTL::StoreActionStore ) ;
-                        HAZE_CORE_YAP( "app::run : render pass descriptor created" ) ;
-
-                        HAZE_CORE_YAP( "app::run : creating render command encoder..." ) ;
-                        MTL::RenderCommandEncoder * encoder = command_buffer->renderCommandEncoder( render_pass_desc ) ;
-                        if( !encoder ) { HAZE_CORE_ERROR( "app::run : failed creating render command encoder" ) ; continue ; }
-                        HAZE_CORE_YAP( "app::run : render command encoder created" ) ;
-                        encoder->endEncoding() ;
-                        HAZE_CORE_YAP( "app::run : encoding finished" ) ;
-
-                        HAZE_CORE_YAP( "app::run : asking system to present drawable..." ) ;
-                        command_buffer->presentDrawable( drawable ) ;
-
-                        pool->release() ;
+                        HAZE_CORE_YAP( "app::run : loading vertices into renderer..." ) ;
+                        renderer_api_.load_vertices( w.layer() ) ;
+                        HAZE_CORE_YAP( "app::run : issuing draw call..." ) ;
+                        renderer_api_.draw( w ) ;
                 }
-                HAZE_CORE_YAP( "app::run : committing GPU workload..." ) ;
-                command_buffer->commit() ;
-                HAZE_CORE_YAP( "app::run : workload committed" ) ;
-//              command_buffer->waitUntilScheduled() ;
-//              command_buffer->waitUntilCompleted() ;
-                command_buffer->release() ;
-
                 ssize_t swap_idx { windows_.size() - 1 } ;
 
                 for( ssize_t i = windows_.size() - 1; i >= 1; --i )
@@ -157,6 +133,9 @@ i32_t app::_run ( i32_t _argc_, char ** _argv_ )
                 {
                         windows_.pop_back() ;
                 }
+                ++frame_count ;
+
+//              if( frame_count > 5 ) break ;
         }
         HAZE_CORE_INFO( "app::run : dropped out of main loop" ) ;
 

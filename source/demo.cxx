@@ -6,8 +6,6 @@
 
 #include <haze/core/common/log.hxx>
 
-#include <haze/gfx/context.hxx>
-#include <haze/app/window.hxx>
 #include <haze/app/app.hxx>
 
 
@@ -19,37 +17,82 @@ haze::window_options window_opts =
         haze::string( "haze::demo" )
 } ;
 
-auto on_update = []( haze::window & window )
-{
+using pixel_type = haze::rgba_f_pixel ;
 
+using         triangle = haze::generic_triangle<   haze::fpoint_3d > ;
+using  filled_triangle = haze:: filled_shape< pixel_type, triangle > ;
+using colored_triangle = haze::colored_shape< pixel_type, triangle > ;
+
+static constexpr pixel_type colors[ 3 ] =
+{
+        { 255 / 255.0,  18 / 255.0,  18 / 255.0, 255 / 255.0 } ,
+        {  18 / 255.0, 255 / 255.0,  18 / 255.0, 255 / 255.0 } ,
+        {  18 / 255.0,  18 / 255.0, 255 / 255.0, 255 / 255.0 } ,
 } ;
+
+static constexpr colored_triangle tri_central =
+{
+        {
+                {  0.000f, +1.0f, 0.0f } ,
+                { -0.866f, -0.5f, 0.0f } ,
+                { +0.866f, -0.5f, 0.0f } ,
+        },
+        {
+                colors[ 0 ] ,
+                colors[ 1 ] ,
+                colors[ 2 ] ,
+        }
+} ;
+
+static constexpr colored_triangle tri_1
+{
+        {
+                { -1.0f, -1.0f, 0.0f } ,
+                { -1.0f,  1.0f, 0.0f } ,
+                {  1.0f, -1.0f, 0.0f } ,
+        },
+        {
+                colors[ 0 ] ,
+                colors[ 1 ] ,
+                colors[ 2 ] ,
+        }
+} ;
+
+static constexpr colored_triangle tri_2
+{
+        {
+                { -1.0f,  1.0f, 0.0f } ,
+                {  1.0f, -1.0f, 0.0f } ,
+                {  1.0f,  1.0f, 0.0f } ,
+        },
+        {
+                colors[ 1 ] ,
+                colors[ 2 ] ,
+                colors[ 0 ] ,
+        }
+} ;
+
 
 int main ( int argc, char ** argv )
 {
         haze::log::init( argc, argv ) ;
 
-        int status {} ;
-
-        HAZE_INFO( "main : started" ) ;
+        auto on_update_1 = [ & ]( haze::window & window )
         {
-                HAZE_INFO( "main : initializing haze app..." ) ;
-                haze::app app ;
+                if( window.layer().objects().empty() )
+                {
+                        window.layer().add_object( tri_1 ) ;
+                        window.layer().add_object( tri_2 ) ;
+                }
+        } ;
 
-                HAZE_INFO( "main : creating windows..." ) ;
+        haze::app app ;
 
-                window_opts. width = 200 ;
-                window_opts.height = 200 ;
+        app.create_window( window_opts )
+           .set_on_update( on_update_1 ) ;
 
-                app.create_window( window_opts ).clear_color() = { 255,  18,  18, 255 } ;
-                app.create_window( window_opts ).clear_color() = {  18, 255,  18, 255 } ;
-                app.create_window( window_opts ).clear_color() = {  18,  18, 255, 255 } ;
-                app.create_window( window_opts ).clear_color() = { 128, 128, 128, 255 } ;
-
-                HAZE_INFO( "main : starting haze app..." ) ;
-                status = app.run( argc, argv ) ;
-        }
-        HAZE_INFO( "main : exiting with status code { %d }", status ) ;
+        app.run( argc, argv ) ;
 
 
-        return status ;
+        return 0 ;
 }

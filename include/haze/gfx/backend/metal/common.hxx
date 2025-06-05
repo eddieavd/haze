@@ -31,6 +31,8 @@ UTI_DIAGS_POP()
 
 #include <simd/simd.h>
 
+#define HAZE_MTL_MAX_VERTEX_ATTRIB_PER_VERTEX_DESC 31
+
 
 namespace haze::mtl
 {
@@ -59,7 +61,7 @@ public:
         constexpr ns_object & operator= ( ns_object const &  _other_ ) noexcept { _release() ; ptr_ = _other_.ptr_ ;           ptr_->retain() ; return *this ; }
         constexpr ns_object & operator= ( ns_object       && _other_ ) noexcept { _release() ; ptr_ = _other_.ptr_ ;   _other_.ptr_ = nullptr ; return *this ; }
 
-        constexpr ~ns_object () noexcept { _release() ; }
+        constexpr ~ns_object () noexcept { HAZE_CORE_INFO_S( "ns_object::dtor" ) ; _release() ; }
 
         constexpr bool exists () const noexcept { return ptr_ != nullptr ; }
 
@@ -68,7 +70,7 @@ public:
 protected:
         pointer ptr_ {} ;
 
-        constexpr void _release () noexcept { if( ptr_ ) { ptr_->release() ; ptr_ = nullptr ; } }
+        constexpr void _release () noexcept { if( ptr_ ) { HAZE_CORE_INFO( "ns_object : releasing ns object" ) ; ptr_->release() ; ptr_ = nullptr ; } }
 } ;
 
 
@@ -237,6 +239,305 @@ struct resource_options
         cpu_cache_mode             cpu_cache_mode_ ;
         hazard_tracking_mode hazard_tracking_mode_ ;
 } ;
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+enum class shader_data_type
+{
+        NONE = 0 ,
+
+        CHAR     = MTL::VertexFormatChar  ,
+        CHAR2    = MTL::VertexFormatChar2 ,
+        CHAR3    = MTL::VertexFormatChar3 ,
+        CHAR4    = MTL::VertexFormatChar4 ,
+
+        UCHAR    = MTL::VertexFormatUChar  ,
+        UCHAR2   = MTL::VertexFormatUChar2 ,
+        UCHAR3   = MTL::VertexFormatUChar3 ,
+        UCHAR4   = MTL::VertexFormatUChar4 ,
+
+        NORMCHAR     = MTL::VertexFormatCharNormalized  ,
+        NORMCHAR2    = MTL::VertexFormatChar2Normalized ,
+        NORMCHAR3    = MTL::VertexFormatChar3Normalized ,
+        NORMCHAR4    = MTL::VertexFormatChar4Normalized ,
+
+        NORMUCHAR    = MTL::VertexFormatUCharNormalized  ,
+        NORMUCHAR2   = MTL::VertexFormatUChar2Normalized ,
+        NORMUCHAR3   = MTL::VertexFormatUChar3Normalized ,
+        NORMUCHAR4   = MTL::VertexFormatUChar4Normalized ,
+
+        SHORT    = MTL::VertexFormatShort  ,
+        SHORT2   = MTL::VertexFormatShort2 ,
+        SHORT3   = MTL::VertexFormatShort3 ,
+        SHORT4   = MTL::VertexFormatShort4 ,
+
+        USHORT   = MTL::VertexFormatUShort  ,
+        USHORT2  = MTL::VertexFormatUShort2 ,
+        USHORT3  = MTL::VertexFormatUShort3 ,
+        USHORT4  = MTL::VertexFormatUShort4 ,
+
+        NORMSHORT    = MTL::VertexFormatShortNormalized  ,
+        NORMSHORT2   = MTL::VertexFormatShort2Normalized ,
+        NORMSHORT3   = MTL::VertexFormatShort3Normalized ,
+        NORMSHORT4   = MTL::VertexFormatShort4Normalized ,
+
+        NORMUSHORT   = MTL::VertexFormatUShortNormalized  ,
+        NORMUSHORT2  = MTL::VertexFormatUShort2Normalized ,
+        NORMUSHORT3  = MTL::VertexFormatUShort3Normalized ,
+        NORMUSHORT4  = MTL::VertexFormatUShort4Normalized ,
+
+        INT      = MTL::VertexFormatInt  ,
+        INT2     = MTL::VertexFormatInt2 ,
+        INT3     = MTL::VertexFormatInt3 ,
+        INT4     = MTL::VertexFormatInt4 ,
+
+        UINT     = MTL::VertexFormatUInt  ,
+        UINT2    = MTL::VertexFormatUInt2 ,
+        UINT3    = MTL::VertexFormatUInt3 ,
+        UINT4    = MTL::VertexFormatUInt4 ,
+
+        HALF     = MTL::VertexFormatHalf  ,
+        HALF2    = MTL::VertexFormatHalf2 ,
+        HALF3    = MTL::VertexFormatHalf3 ,
+        HALF4    = MTL::VertexFormatHalf4 ,
+
+        FLOAT    = MTL::VertexFormatFloat  ,
+        FLOAT2   = MTL::VertexFormatFloat2 ,
+        FLOAT3   = MTL::VertexFormatFloat3 ,
+        FLOAT4   = MTL::VertexFormatFloat4 ,
+
+//      FLOAT3X3 ,
+//      FLOAT4X4 ,
+} ;
+
+constexpr u32_t shader_data_type_size ( shader_data_type _type_ ) noexcept
+{
+        switch( _type_ )
+        {
+                case shader_data_type::     CHAR : [[ fallthrough ]] ;
+                case shader_data_type::    UCHAR : [[ fallthrough ]] ;
+                case shader_data_type:: NORMCHAR : [[ fallthrough ]] ;
+                case shader_data_type::NORMUCHAR :       return 1 * 1 ;
+
+                case shader_data_type::     CHAR2 : [[ fallthrough ]] ;
+                case shader_data_type::    UCHAR2 : [[ fallthrough ]] ;
+                case shader_data_type:: NORMCHAR2 : [[ fallthrough ]] ;
+                case shader_data_type::NORMUCHAR2 :      return 1 * 2 ;
+
+                case shader_data_type::     CHAR3 : [[ fallthrough ]] ;
+                case shader_data_type::    UCHAR3 : [[ fallthrough ]] ;
+                case shader_data_type:: NORMCHAR3 : [[ fallthrough ]] ;
+                case shader_data_type::NORMUCHAR3 :      return 1 * 3 ;
+
+                case shader_data_type::     CHAR4 : [[ fallthrough ]] ;
+                case shader_data_type::    UCHAR4 : [[ fallthrough ]] ;
+                case shader_data_type:: NORMCHAR4 : [[ fallthrough ]] ;
+                case shader_data_type::NORMUCHAR4 :      return 1 * 4 ;
+
+                case shader_data_type::     SHORT : [[ fallthrough ]] ;
+                case shader_data_type::    USHORT : [[ fallthrough ]] ;
+                case shader_data_type:: NORMSHORT : [[ fallthrough ]] ;
+                case shader_data_type::NORMUSHORT :      return 2 * 1 ;
+
+                case shader_data_type::     SHORT2 : [[ fallthrough ]] ;
+                case shader_data_type::    USHORT2 : [[ fallthrough ]] ;
+                case shader_data_type:: NORMSHORT2 : [[ fallthrough ]] ;
+                case shader_data_type::NORMUSHORT2 :      return 2 * 2 ;
+
+                case shader_data_type::     SHORT3 : [[ fallthrough ]] ;
+                case shader_data_type::    USHORT3 : [[ fallthrough ]] ;
+                case shader_data_type:: NORMSHORT3 : [[ fallthrough ]] ;
+                case shader_data_type::NORMUSHORT3 :      return 2 * 3 ;
+
+                case shader_data_type::     SHORT4 : [[ fallthrough ]] ;
+                case shader_data_type::    USHORT4 : [[ fallthrough ]] ;
+                case shader_data_type:: NORMSHORT4 : [[ fallthrough ]] ;
+                case shader_data_type::NORMUSHORT4 :      return 2 * 4 ;
+
+                case shader_data_type:: INT  : [[ fallthrough ]] ;
+                case shader_data_type::UINT  :      return 4 * 1 ;
+                case shader_data_type:: INT2 : [[ fallthrough ]] ;
+                case shader_data_type::UINT2 :      return 4 * 2 ;
+                case shader_data_type:: INT3 : [[ fallthrough ]] ;
+                case shader_data_type::UINT3 :      return 4 * 3 ;
+                case shader_data_type:: INT4 : [[ fallthrough ]] ;
+                case shader_data_type::UINT4 :      return 4 * 4 ;
+
+                case shader_data_type::HALF    : return 2     ;
+                case shader_data_type::HALF2   : return 2 * 2 ;
+                case shader_data_type::HALF3   : return 2 * 3 ;
+                case shader_data_type::HALF4   : return 2 * 4 ;
+
+                case shader_data_type::FLOAT    : return 4     ;
+                case shader_data_type::FLOAT2   : return 4 * 2 ;
+                case shader_data_type::FLOAT3   : return 4 * 4 ; // I_CAN_FIX_HER: metal specific, make all this generic
+                case shader_data_type::FLOAT4   : return 4 * 4 ;
+
+//              case shader_data_type::FLOAT3X3 : return 4 * 3 * 3 ;
+//              case shader_data_type::FLOAT4X4 : return 4 * 3 * 3 ;
+//              case shader_data_type::BOOL     : return 1         ;
+                default                         :
+                {
+                        HAZE_CEXPR_ASSERT( uti::always_false_v< shader_data_type >, "unknown shader data type!" ) ;
+                        return 0 ;
+                }
+        }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr u32_t shader_data_type_component_count ( shader_data_type _type_ ) noexcept
+{
+        switch( _type_ )
+        {
+                case shader_data_type::      CHAR : [[ fallthrough ]] ;
+                case shader_data_type::     UCHAR : [[ fallthrough ]] ;
+                case shader_data_type::  NORMCHAR : [[ fallthrough ]] ;
+                case shader_data_type:: NORMUCHAR : [[ fallthrough ]] ;
+
+                case shader_data_type::     SHORT : [[ fallthrough ]] ;
+                case shader_data_type::    USHORT : [[ fallthrough ]] ;
+                case shader_data_type:: NORMSHORT : [[ fallthrough ]] ;
+                case shader_data_type::NORMUSHORT : [[ fallthrough ]] ;
+
+                case shader_data_type::       INT : [[ fallthrough ]] ;
+                case shader_data_type::      UINT : [[ fallthrough ]] ;
+                case shader_data_type::      HALF : [[ fallthrough ]] ;
+                case shader_data_type::     FLOAT :          return 1 ;
+
+                case shader_data_type::      CHAR2 : [[ fallthrough ]] ;
+                case shader_data_type::     UCHAR2 : [[ fallthrough ]] ;
+                case shader_data_type::  NORMCHAR2 : [[ fallthrough ]] ;
+                case shader_data_type:: NORMUCHAR2 : [[ fallthrough ]] ;
+
+                case shader_data_type::     SHORT2 : [[ fallthrough ]] ;
+                case shader_data_type::    USHORT2 : [[ fallthrough ]] ;
+                case shader_data_type:: NORMSHORT2 : [[ fallthrough ]] ;
+                case shader_data_type::NORMUSHORT2 : [[ fallthrough ]] ;
+
+                case shader_data_type::       INT2 : [[ fallthrough ]] ;
+                case shader_data_type::      UINT2 : [[ fallthrough ]] ;
+                case shader_data_type::      HALF2 : [[ fallthrough ]] ;
+                case shader_data_type::     FLOAT2 : return 2 ;
+
+                case shader_data_type::      CHAR3 : [[ fallthrough ]] ;
+                case shader_data_type::     UCHAR3 : [[ fallthrough ]] ;
+                case shader_data_type::  NORMCHAR3 : [[ fallthrough ]] ;
+                case shader_data_type:: NORMUCHAR3 : [[ fallthrough ]] ;
+
+                case shader_data_type::     SHORT3 : [[ fallthrough ]] ;
+                case shader_data_type::    USHORT3 : [[ fallthrough ]] ;
+                case shader_data_type:: NORMSHORT3 : [[ fallthrough ]] ;
+                case shader_data_type::NORMUSHORT3 : [[ fallthrough ]] ;
+
+                case shader_data_type::       INT3 : [[ fallthrough ]] ;
+                case shader_data_type::      UINT3 : [[ fallthrough ]] ;
+                case shader_data_type::      HALF3 : [[ fallthrough ]] ;
+                case shader_data_type::     FLOAT3 : return 3 ;
+
+                case shader_data_type::      CHAR4 : [[ fallthrough ]] ;
+                case shader_data_type::     UCHAR4 : [[ fallthrough ]] ;
+                case shader_data_type::  NORMCHAR4 : [[ fallthrough ]] ;
+                case shader_data_type:: NORMUCHAR4 : [[ fallthrough ]] ;
+
+                case shader_data_type::     SHORT4 : [[ fallthrough ]] ;
+                case shader_data_type::    USHORT4 : [[ fallthrough ]] ;
+                case shader_data_type:: NORMSHORT4 : [[ fallthrough ]] ;
+                case shader_data_type::NORMUSHORT4 : [[ fallthrough ]] ;
+
+                case shader_data_type::       INT4 : [[ fallthrough ]] ;
+                case shader_data_type::      UINT4 : [[ fallthrough ]] ;
+                case shader_data_type::      HALF4 : [[ fallthrough ]] ;
+                case shader_data_type::     FLOAT4 : return 4 ;
+
+//              case shader_data_type::FLOAT3X3 : return 4 * 3 * 3 ;
+//              case shader_data_type::FLOAT4X4 : return 4 * 3 * 3 ;
+//              case shader_data_type::BOOL     : return 1         ;
+                default                         :
+                {
+                        HAZE_CEXPR_ASSERT( uti::always_false_v< shader_data_type >, "unknown shader data type!" ) ;
+                        return 0 ;
+                }
+        }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+constexpr string_view shader_data_type_string ( shader_data_type _type_ ) noexcept
+{
+        switch( _type_ )
+        {
+                case shader_data_type::      CHAR : return      "CHAR" ;
+                case shader_data_type::     UCHAR : return     "UCHAR" ;
+                case shader_data_type::  NORMCHAR : return  "NORMCHAR" ;
+                case shader_data_type:: NORMUCHAR : return "NORMUCHAR" ;
+
+                case shader_data_type::     SHORT : return      "SHORT" ;
+                case shader_data_type::    USHORT : return     "USHORT" ;
+                case shader_data_type:: NORMSHORT : return  "NORMSHORT" ;
+                case shader_data_type::NORMUSHORT : return "NORMUSHORT" ;
+
+                case shader_data_type::       INT : return   "INT" ;
+                case shader_data_type::      UINT : return  "UINT" ;
+                case shader_data_type::      HALF : return  "HALF" ;
+                case shader_data_type::     FLOAT : return "FLOAT" ;
+
+                case shader_data_type::      CHAR2 : return      "CHAR2" ;
+                case shader_data_type::     UCHAR2 : return     "UCHAR2" ;
+                case shader_data_type::  NORMCHAR2 : return  "NORMCHAR2" ;
+                case shader_data_type:: NORMUCHAR2 : return "NORMUCHAR2" ;
+
+                case shader_data_type::     SHORT2 : return      "SHORT2" ;
+                case shader_data_type::    USHORT2 : return     "USHORT2" ;
+                case shader_data_type:: NORMSHORT2 : return  "NORMSHORT2" ;
+                case shader_data_type::NORMUSHORT2 : return "NORMUSHORT2" ;
+
+                case shader_data_type::       INT2 : return   "INT2" ;
+                case shader_data_type::      UINT2 : return  "UINT2" ;
+                case shader_data_type::      HALF2 : return  "HALF2" ;
+                case shader_data_type::     FLOAT2 : return "FLOAT2" ;
+
+                case shader_data_type::      CHAR3 : return      "CHAR3" ;
+                case shader_data_type::     UCHAR3 : return     "UCHAR3" ;
+                case shader_data_type::  NORMCHAR3 : return  "NORMCHAR3" ;
+                case shader_data_type:: NORMUCHAR3 : return "NORMUCHAR3" ;
+
+                case shader_data_type::     SHORT3 : return      "SHORT3" ;
+                case shader_data_type::    USHORT3 : return     "USHORT3" ;
+                case shader_data_type:: NORMSHORT3 : return  "NORMSHORT3" ;
+                case shader_data_type::NORMUSHORT3 : return "NORMUSHORT3" ;
+
+                case shader_data_type::       INT3 : return   "INT3" ;
+                case shader_data_type::      UINT3 : return  "UINT3" ;
+                case shader_data_type::      HALF3 : return  "HALF3" ;
+                case shader_data_type::     FLOAT3 : return "FLOAT3" ;
+
+                case shader_data_type::      CHAR4 : return      "CHAR4" ;
+                case shader_data_type::     UCHAR4 : return     "UCHAR4" ;
+                case shader_data_type::  NORMCHAR4 : return  "NORMCHAR4" ;
+                case shader_data_type:: NORMUCHAR4 : return "NORMUCHAR4" ;
+
+                case shader_data_type::     SHORT4 : return      "SHORT4" ;
+                case shader_data_type::    USHORT4 : return     "USHORT4" ;
+                case shader_data_type:: NORMSHORT4 : return  "NORMSHORT4" ;
+                case shader_data_type::NORMUSHORT4 : return "NORMUSHORT4" ;
+
+                case shader_data_type::       INT4 : return   "INT4" ;
+                case shader_data_type::      UINT4 : return  "UINT4" ;
+                case shader_data_type::      HALF4 : return  "HALF4" ;
+                case shader_data_type::     FLOAT4 : return "FLOAT4" ;
+
+//              case shader_data_type::FLOAT3X3 : return 4 * 3 * 3 ;
+//              case shader_data_type::FLOAT4X4 : return 4 * 3 * 3 ;
+//              case shader_data_type::BOOL     : return 1         ;
+                default                         :
+                {
+                        HAZE_CEXPR_ASSERT( uti::always_false_v< shader_data_type >, "unknown shader data type!" ) ;
+                        return 0 ;
+                }
+        }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

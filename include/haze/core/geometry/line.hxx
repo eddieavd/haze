@@ -27,6 +27,7 @@ struct generic_line
 
         static constexpr ssize_t       dimensions { point_type::dimensions } ;
         static constexpr ssize_t shape_dimensions {                      1 } ;
+        static constexpr ssize_t     vertex_count {                      2 } ;
 
         point_type begin_ ;
         point_type   end_ ;
